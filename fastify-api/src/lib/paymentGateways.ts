@@ -3,6 +3,10 @@ import type {
   PaymentGatewayRegistry,
 } from "./paymentGateway.js";
 
+import { stripe } from "./stripe.js";
+import { StripePaymentGateway } from
+  "./stripePaymentGateway.js";
+
 class DefaultPaymentGatewayRegistry
   implements PaymentGatewayRegistry
 {
@@ -27,5 +31,23 @@ class DefaultPaymentGatewayRegistry
   }
 }
 
-export const paymentGateways =
+const registry =
   new DefaultPaymentGatewayRegistry();
+
+const webhookSecret =
+  process.env.STRIPE_WEBHOOK_SECRET;
+
+if (!webhookSecret) {
+  throw new Error(
+    "STRIPE_WEBHOOK_SECRET is not configured.",
+  );
+}
+
+registry.register(
+  new StripePaymentGateway(
+    stripe,
+    webhookSecret,
+  ),
+);
+
+export const paymentGateways = registry;

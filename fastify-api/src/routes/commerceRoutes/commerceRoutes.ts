@@ -41,6 +41,7 @@ import type {
   RefundListQuery,
   UpdateAttendeeBody,
   UpdateOrderStatusBody,
+  PaymentProviderParams,
 } from "../../types/commerceTypes.js";
 
 const canViewOrders = authorizeAny([
@@ -215,9 +216,14 @@ export default async function commerceRoutes(
    */
 
   app.post<{
-    Params: IdParams;
+    Params: PaymentProviderParams;
   }>(
     "/api/payments/webhooks/:provider",
+    {
+      config: {
+        rawBody: true,
+      },
+    },
     controllers.paymentWebhook,
   );
 

@@ -78,3 +78,8 @@ export interface PaymentGateway {
 export type PaymentGatewayRegistry = {
   get(providerName: string): PaymentGateway | undefined;
 };
+
+export type MutablePaymentGatewayRegistry =
+  PaymentGatewayRegistry & {
+    register(gateway: PaymentGateway): void;
+  };

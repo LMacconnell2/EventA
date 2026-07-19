@@ -16,6 +16,7 @@ import type {
   RefundListQuery,
   UpdateAttendeeBody,
   UpdateOrderStatusBody,
+  PaymentProviderParams,
 } from "../types/commerceTypes.js";
 import {
   CommerceError,
@@ -206,22 +207,25 @@ export function createCommerceControllers(services: {
 
     paymentWebhook: async (
       request: FastifyRequest<{
-        Params: IdParams;
+        Params: PaymentProviderParams;
       }>,
       reply: FastifyReply,
     ) => {
       try {
-        const rawBody = Buffer.isBuffer(request.body)
-          ? request.body
-          : Buffer.from(
-              typeof request.body === "string"
-                ? request.body
-                : JSON.stringify(request.body ?? {}),
-            );
+        if (!request.rawBody) {
+          throw new CommerceError(
+            400,
+            "Raw webhook body is unavailable.",
+            "WEBHOOK_RAW_BODY_MISSING",
+          );
+        }
+        const rawBody = Buffer.isBuffer(request.rawBody)
+              ? request.rawBody
+              : Buffer.from(request.rawBody);
 
         return reply.send(
           await services.payments.processWebhook(
-            String(request.params.provider),
+            request.params.provider,
             request.headers,
             rawBody,
           ),
