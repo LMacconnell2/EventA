@@ -1,0 +1,128 @@
+/* Shared event modal, form-control, danger-action, and spinner styles. */
+
+.event-modal-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 55%);
+}
+
+.event-modal {
+  width: min(576px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 64px rgb(0 0 0 / 25%);
+}
+
+.event-modal__header,
+.event-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  gap: 16px;
+}
+
+.event-modal__header {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.event-modal__header h2,
+.event-modal__header p {
+  margin: 0;
+}
+
+.event-modal__header h2 {
+  color: var(--color-text-heading);
+}
+
+.event-modal__header p {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.event-modal__body {
+  display: grid;
+  padding: 20px;
+  gap: 20px;
+}
+
+.event-modal__footer {
+  justify-content: flex-end;
+  border-top: 1px solid var(--color-border);
+}
+
+.event-form-field {
+  display: grid;
+  gap: 7px;
+  color: var(--color-text-heading);
+  font-weight: 600;
+}
+
+.event-form-field select,
+.event-search-control {
+  min-height: 44px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.event-form-field select {
+  width: 100%;
+  padding: 0 12px;
+  font: inherit;
+  outline: none;
+}
+
+.event-form-field select:focus,
+.event-search-control:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgb(31 94 255 / 12%);
+}
+
+.event-search-control {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+  color: var(--color-text-muted);
+}
+
+.event-search-control input {
+  width: 100%;
+  height: 42px;
+  padding: 0;
+  color: var(--color-text);
+  font: inherit;
+  background: transparent;
+  border: 0;
+  outline: 0;
+}
+
+.event-danger-action {
+  color: #ffffff;
+  background: var(--color-danger-text);
+  border: 1px solid var(--color-danger-text);
+}
+
+.event-danger-action:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+.event-spinner {
+  animation: event-spinner 0.8s linear infinite;
+}
+
+@keyframes event-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}

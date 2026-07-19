@@ -1,0 +1,20 @@
+.dashboard-layout {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background: var(--color-background);
+}
+
+.dashboard-shell {
+  flex: 1;
+  min-width: 0;
+  min-height: 100vh;
+  background: var(--color-background);
+}
+
+.dashboard-main {
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}

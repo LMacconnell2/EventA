@@ -1,0 +1,312 @@
+/* EventTicketsView-specific styles. */
+
+.event-ticket-summary {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.event-ticket-summary > div {
+  display: grid;
+  min-width: 150px;
+  padding: 12px 16px;
+  gap: 4px;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.event-ticket-summary span {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.event-ticket-summary strong {
+  color: var(--color-text-heading);
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+
+.event-ticket-list {
+  display: grid;
+  gap: 14px;
+}
+
+.event-ticket-card {
+  position: relative;
+  display: grid;
+  padding: 20px;
+  gap: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.event-ticket-card:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.event-ticket-card__actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.event-ticket-card__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-right: 88px;
+  gap: 20px;
+}
+
+.event-ticket-card__heading > div {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.event-ticket-card__heading h3 {
+  margin: 0;
+  color: var(--color-text-heading);
+  font-size: 1.08rem;
+}
+
+.event-ticket-price {
+  flex: 0 0 auto;
+  color: var(--color-text-heading);
+  font-size: 1.15rem;
+  font-weight: 750;
+}
+
+.event-ticket-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 9px;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+}
+
+.event-ticket-card > p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.event-ticket-card__numbers {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+}
+
+.event-ticket-progress {
+  width: 100%;
+  height: 9px;
+  overflow: hidden;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-pill);
+}
+
+.event-ticket-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: inherit;
+  transition: width 180ms ease;
+}
+
+.event-ticket-card > small {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.event-empty-state,
+.event-error-state {
+  display: grid;
+  justify-items: center;
+  min-height: 240px;
+  padding: 40px;
+  gap: 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+  background: var(--color-surface-muted);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+}
+
+.event-empty-state h3,
+.event-empty-state p,
+.event-error-state p {
+  margin: 0;
+}
+
+.event-empty-state h3 {
+  color: var(--color-text-heading);
+}
+
+.event-ticket-editor {
+  width: min(760px, 100%);
+}
+
+.event-confirmation-modal {
+  width: min(480px, 100%);
+}
+
+.event-ticket-editor .event-form-field input,
+.event-ticket-editor .event-form-field textarea,
+.event-ticket-editor .event-form-field select {
+  width: 100%;
+  color: var(--color-text);
+  font: inherit;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  outline: none;
+}
+
+.event-ticket-editor .event-form-field input,
+.event-ticket-editor .event-form-field select {
+  min-height: 44px;
+  padding: 0 12px;
+}
+
+.event-ticket-editor .event-form-field textarea {
+  min-height: 96px;
+  padding: 11px 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.event-ticket-editor .event-form-field input:focus,
+.event-ticket-editor .event-form-field textarea:focus,
+.event-ticket-editor .event-form-field select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgb(31 94 255 / 12%);
+}
+
+.event-form-field--wide {
+  grid-column: 1 / -1;
+}
+
+.event-category-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.event-category-fieldset legend {
+  margin-bottom: 10px;
+  color: var(--color-text-heading);
+  font-weight: 600;
+}
+
+.event-category-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.event-category-option {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 12px;
+  gap: 8px;
+  color: var(--color-text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.event-category-option:hover {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.event-category-option input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.event-category-option__color {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+@media (max-width: 680px) {
+  .event-ticket-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .event-ticket-summary > div {
+    min-width: 0;
+  }
+
+  .event-ticket-card__heading {
+    padding-top: 32px;
+    padding-right: 0;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .event-ticket-price {
+    font-size: 1.05rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .event-ticket-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .event-ticket-card {
+    padding: 16px;
+  }
+
+  .event-ticket-card__numbers {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .event-ticket-card__numbers > span[aria-hidden="true"] {
+    display: none;
+  }
+
+  .event-form-field--wide {
+    grid-column: auto;
+  }
+
+  .event-category-options {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

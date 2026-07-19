@@ -1,0 +1,57 @@
+/* Shared sponsor and modal responsive rules. */
+
+@media (max-width: 680px) {
+  .event-static-view {
+    padding: 22px;
+  }
+
+  .event-static-view__toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .event-static-view__toolbar .event-primary-action {
+    width: 100%;
+  }
+
+  .event-sponsor-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .event-sponsor-card__actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .event-sponsor-card {
+    grid-template-columns: 1fr;
+  }
+
+  .event-sponsor-card__logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .event-sponsor-card__actions {
+    grid-column: auto;
+    justify-content: flex-start;
+  }
+
+  .event-modal__header,
+  .event-modal__body,
+  .event-modal__footer {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .event-modal__footer {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .event-modal__footer > button {
+    width: 100%;
+  }
+}

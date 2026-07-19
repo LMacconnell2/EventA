@@ -1,0 +1,233 @@
+/* Event sponsor list, cards, states, and sponsor picker. */
+
+.event-sponsor-list {
+  display: grid;
+  gap: 24px;
+}
+
+.event-sponsor-group {
+  display: grid;
+  gap: 12px;
+}
+
+.event-sponsor-group__tier {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-heading);
+}
+
+.event-sponsor-tier {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  color: var(--color-text-heading);
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+}
+
+.event-sponsor-group__count {
+  display: inline-grid;
+  min-width: 24px;
+  height: 24px;
+  place-items: center;
+  padding: 0 7px;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-pill);
+}
+
+.event-sponsor-group__cards {
+  display: grid;
+  gap: 12px;
+}
+
+.event-sponsor-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left-width: 4px;
+  border-radius: var(--radius-md);
+}
+
+.event-sponsor-card__logo {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+}
+
+.event-sponsor-card__logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.event-sponsor-card__content {
+  min-width: 0;
+}
+
+.event-sponsor-card__content h3,
+.event-sponsor-card__content p {
+  margin: 0;
+}
+
+.event-sponsor-card__content h3 {
+  color: var(--color-text-heading);
+  font-size: 1rem;
+}
+
+.event-sponsor-card__content p {
+  margin-top: 5px;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.event-sponsor-card__content a {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  margin-top: 8px;
+  gap: 5px;
+  overflow: hidden;
+  color: var(--color-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-sponsor-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.event-sponsor-empty,
+.event-sponsor-state {
+  display: grid;
+  justify-items: center;
+  min-height: 260px;
+  padding: 40px;
+  gap: 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+  background: var(--color-surface-muted);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+}
+
+.event-sponsor-empty h3,
+.event-sponsor-empty p,
+.event-sponsor-state h3,
+.event-sponsor-state p {
+  margin: 0;
+}
+
+.event-sponsor-empty h3,
+.event-sponsor-state h3 {
+  color: var(--color-text-heading);
+}
+
+.event-sponsor-state--error,
+.event-form-error {
+  color: var(--color-danger-text);
+}
+
+.event-sponsor-picker {
+  display: grid;
+  max-height: 288px;
+  margin: 0;
+  padding: 0;
+  gap: 8px;
+  overflow-y: auto;
+  border: 0;
+}
+
+.event-sponsor-picker legend {
+  margin-bottom: 7px;
+  color: var(--color-text-heading);
+  font-weight: 600;
+}
+
+.event-sponsor-picker__state,
+.event-inline-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-muted);
+}
+
+.event-sponsor-picker__state {
+  justify-content: center;
+  min-height: 80px;
+}
+
+.event-sponsor-option {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  gap: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.event-sponsor-option:hover,
+.event-sponsor-option--selected {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.event-sponsor-option input[type="radio"] {
+  flex: 0 0 auto;
+  accent-color: var(--color-primary);
+}
+
+.event-sponsor-option__logo {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+}
+
+.event-sponsor-option__logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.event-sponsor-option__content {
+  display: grid;
+  min-width: 0;
+}
+
+.event-sponsor-option__content strong {
+  color: var(--color-text-heading);
+}
+
+.event-sponsor-option__content span {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

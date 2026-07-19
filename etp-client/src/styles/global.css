@@ -1,0 +1,59 @@
+html {
+  background: var(--color-background);
+}
+
+body {
+  min-width: 320px;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-family-base);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+button,
+select {
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 3px solid rgb(31 94 255 / 0.2);
+  outline-offset: 2px;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/*
+ * The sidebar and dashboard layout should determine where the page starts.
+ * A typical layout might use:
+ *
+ * .dashboard-layout {
+ *   display: grid;
+ *   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+ *   min-height: 100vh;
+ * }
+ *
+ * .dashboard-main {
+ *   min-width: 0;
+ *   background: var(--color-background);
+ * }
+ */

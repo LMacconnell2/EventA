@@ -1,0 +1,265 @@
+/* Empty states, summary cards, records, venue, organizer, and search. */
+
+/* Empty and summary cards */
+
+.event-empty-card {
+  display: grid;
+  place-items: center;
+  min-height: 260px;
+  padding: 40px;
+  color: var(--color-text-muted);
+  text-align: center;
+  background: var(--color-surface-muted);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+}
+
+.event-empty-card h3 {
+  margin-top: 14px;
+  color: var(--color-text-heading);
+  font-size: 1.1rem;
+}
+
+.event-empty-card p {
+  max-width: 500px;
+  margin-top: 7px;
+  line-height: 1.5;
+}
+
+.event-summary-banner {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 18px 20px;
+  gap: 16px;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-md);
+}
+
+.event-summary-banner div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.event-summary-banner strong {
+  font-size: 1.5rem;
+}
+
+.event-summary-banner span {
+  color: var(--color-text-muted);
+}
+
+/* Sponsors and record cards */
+
+.event-card-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.event-record-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 18px;
+  gap: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.event-record-card__media {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-md);
+}
+
+.event-record-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.event-record-card__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.event-record-card__body h3 {
+  color: var(--color-text-heading);
+  font-size: 1rem;
+}
+
+.event-record-card__body p {
+  margin-top: 5px;
+  color: var(--color-text-muted);
+}
+
+.event-record-card__body a {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 8px;
+  gap: 5px;
+  color: var(--color-primary);
+}
+
+.event-icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+}
+
+.event-icon-action:hover {
+  background: var(--color-surface-muted);
+}
+
+.event-icon-action--danger:hover {
+  color: var(--color-danger-text);
+  background: var(--color-danger-background);
+}
+
+/* Venue */
+
+.event-venue-card {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) 1.2fr;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.event-venue-card__image,
+.event-venue-card__placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+}
+
+.event-venue-card__image {
+  object-fit: cover;
+}
+
+.event-venue-card__placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+}
+
+.event-venue-card__content {
+  padding: 28px;
+}
+
+.event-venue-card__content h3 {
+  color: var(--color-text-heading);
+  font-size: 1.35rem;
+}
+
+.event-definition-list {
+  display: grid;
+  margin-top: 24px;
+  gap: 18px;
+}
+
+.event-definition-list div {
+  display: grid;
+  gap: 5px;
+}
+
+.event-definition-list dt {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.event-definition-list dd {
+  color: var(--color-text);
+}
+
+.event-definition-list a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-primary);
+}
+
+/* Organizer */
+
+.event-organizer-card {
+  display: flex;
+  align-items: flex-start;
+  padding: 24px;
+  gap: 18px;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.event-organizer-card__icon {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-md);
+}
+
+.event-organizer-card span {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.event-organizer-card h3 {
+  margin-top: 3px;
+  color: var(--color-text-heading);
+}
+
+.event-organizer-card p {
+  max-width: 600px;
+  margin-top: 9px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+/* Search */
+
+.event-inline-search {
+  display: flex;
+  align-items: center;
+  max-width: 440px;
+  height: 46px;
+  margin-bottom: 24px;
+  padding: 0 14px;
+  gap: 9px;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.event-inline-search input {
+  height: 100%;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
