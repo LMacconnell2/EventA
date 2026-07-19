@@ -119,7 +119,7 @@ export class AttendeeService {
           oi.ticket_id,
           t.ticket_name,
           t.event_id,
-          e.event_name AS event_title,
+          e.event_title,
           o.order_reference,
           o.buyer_name,
           o.buyer_email,
@@ -161,7 +161,7 @@ export class AttendeeService {
           oi.unit_price::text,
           t.ticket_name,
           t.event_id,
-          e.event_name AS event_title,
+          e.event_title,
           o.order_reference,
           o.buyer_name,
           o.buyer_email

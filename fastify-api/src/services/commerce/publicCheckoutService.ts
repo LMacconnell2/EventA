@@ -93,7 +93,7 @@ export class PublicCheckoutService {
 
       const event = await client.query(
         `
-          SELECT event_id, event_name
+          SELECT event_id, event_title
           FROM events
           WHERE event_id = $1
             AND deleted_at IS NULL
@@ -438,7 +438,7 @@ export class PublicCheckoutService {
       `
         SELECT
           o.*,
-          e.event_name AS event_title
+          e.event_title
         FROM orders o
         JOIN order_items oi
           ON oi.order_id = o.order_id

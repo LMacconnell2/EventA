@@ -213,7 +213,7 @@ export class OrderService {
             (oi.unit_price * oi.quantity)::text AS line_total,
             t.ticket_name,
             t.event_id,
-            e.event_name AS event_title
+            e.event_title
           FROM order_items oi
           JOIN tickets t ON t.ticket_id = oi.ticket_id
           JOIN events e ON e.event_id = t.event_id
