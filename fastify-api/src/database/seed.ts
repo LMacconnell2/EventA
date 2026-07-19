@@ -49,6 +49,7 @@ const attendeeStatuses = [
   { attendee_status_name: "Purchased", active: true },
   { attendee_status_name: "Checked In", active: true },
   { attendee_status_name: "Cancelled", active: true },
+  { attendee_status_name: "Refunded", active: true },
 ];
 
 const userStatuses = [

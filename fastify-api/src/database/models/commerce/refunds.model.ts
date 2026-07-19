@@ -13,7 +13,11 @@ export const RefundsModel = {
 
             reason VARCHAR(255),
 
-            refunded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            refund_status VARCHAR(30) NOT NULL DEFAULT 'PROCESSING',
+
+            provider_metadata JSONB,
+
+            refunded_at TIMESTAMPTZ,
 
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -30,7 +34,27 @@ export const RefundsModel = {
                 ON DELETE RESTRICT,
 
             CONSTRAINT chk_refund_amount
-                CHECK(amount > 0)
+                CHECK(amount > 0),
+
+            CONSTRAINT chk_refund_status
+                CHECK(
+                    refund_status IN (
+                        'PROCESSING',
+                        'SUCCEEDED',
+                        'FAILED',
+                        'CANCELLED'
+                    )
+                )
         );
+
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_refunds_provider_refund
+            ON refunds(provider_refund_id)
+            WHERE provider_refund_id IS NOT NULL;
+
+        CREATE INDEX IF NOT EXISTS idx_refunds_payment
+            ON refunds(payment_id);
+
+        CREATE INDEX IF NOT EXISTS idx_refunds_refunded_at
+            ON refunds(refunded_at);
     `
 };
