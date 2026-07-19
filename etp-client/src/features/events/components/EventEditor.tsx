@@ -146,7 +146,6 @@ useEffect(() => {
     form.event_title.trim() !== "" &&
     form.venue_id !== null &&
     form.organizer_id !== null &&
-    form.visibility_id !== null &&
     form.timezone.trim() !== "" &&
     form.start_date !== "" &&
     form.end_date !== "" &&
