@@ -12,6 +12,9 @@ export const AttendeesModel = {
             attendee_lname VARCHAR(100) NOT NULL,
             email VARCHAR(255) NOT NULL,
 
+            ticket_code VARCHAR(100) NOT NULL,
+            qr_token_hash VARCHAR(64) NOT NULL,
+
             checked_in BOOLEAN NOT NULL DEFAULT FALSE,
             checkin_time TIMESTAMPTZ,
 
@@ -19,8 +22,10 @@ export const AttendeesModel = {
 
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
             created_by INTEGER,
             updated_by INTEGER,
+
             deleted_at TIMESTAMPTZ,
 
             CONSTRAINT fk_attendees_order_item
@@ -35,6 +40,12 @@ export const AttendeesModel = {
                 ON UPDATE CASCADE
                 ON DELETE RESTRICT,
 
+            CONSTRAINT uq_attendees_ticket_code
+                UNIQUE(ticket_code),
+
+            CONSTRAINT uq_attendees_qr_token_hash
+                UNIQUE(qr_token_hash),
+
             CONSTRAINT chk_attendee_fname
                 CHECK(length(trim(attendee_fname)) > 0),
 
@@ -42,7 +53,25 @@ export const AttendeesModel = {
                 CHECK(length(trim(attendee_lname)) > 0),
 
             CONSTRAINT chk_attendee_email
-                CHECK(length(trim(email)) > 0)
+                CHECK(length(trim(email)) > 0),
+
+            CONSTRAINT chk_attendee_ticket_code
+                CHECK(length(trim(ticket_code)) > 0),
+
+            CONSTRAINT chk_attendee_qr_token_hash
+                CHECK(length(trim(qr_token_hash)) > 0)
         );
+
+        CREATE INDEX IF NOT EXISTS idx_attendees_order_item
+            ON attendees(order_item_id);
+
+        CREATE INDEX IF NOT EXISTS idx_attendees_status
+            ON attendees(attendee_status_id);
+
+        CREATE INDEX IF NOT EXISTS idx_attendees_email
+            ON attendees(email);
+
+        CREATE INDEX IF NOT EXISTS idx_attendees_checked_in
+            ON attendees(checked_in);
     `
 };

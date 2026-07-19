@@ -51,6 +51,10 @@ import { PaymentProvidersModel } from "./models/commerce/paymentProviders.model"
 import { PaymentsModel } from "./models/commerce/payments.model";
 import { RefundsModel } from "./models/commerce/refunds.model";
 import { PromoCodeRedemptionsModel } from "./models/commerce/promoCodeRedemptions.model";
+import { CheckoutSessionsModel } from "./models/commerce/checkoutSessions.model";
+import { CheckoutSessionItemsModel } from "./models/commerce/checkoutSessionItems.model";
+import { CommerceIdempotencyKeysModel } from "./models/commerce/commerceIdempotencyKeys.model";
+import { PaymentWebhookEventsModel } from "./models/commerce/paymentWebhookEvents.model";
 
 // Attendance
 import { AttendeesModel } from "./models/attendance/attendees.model";
@@ -116,11 +120,15 @@ const models: DatabaseModel[] = [
     PaymentProvidersModel,
     PaymentsModel,
     RefundsModel,
-    PromoCodeRedemptionsModel,
-
     // Attendance
     AttendeesModel,
     AttendeeCheckinsModel,
+    // Commerce continued:
+    PromoCodeRedemptionsModel,
+    CheckoutSessionsModel,
+    CheckoutSessionItemsModel,
+    CommerceIdempotencyKeysModel,
+    PaymentWebhookEventsModel,
 
     // Utilities
     NotesModel,

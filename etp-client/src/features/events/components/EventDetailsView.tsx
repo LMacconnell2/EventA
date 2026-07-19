@@ -58,10 +58,10 @@ function combineDateAndTime(
 
 export function EventDetailsView({
   form,
-  visibilityOptions,
+  visibilityOptions = [],
   disabled,
-  venueOptions,
-  organizerOptions,
+  venueOptions = [],
+  organizerOptions = [],
   onChange,
 }: EventDetailsViewProps) {
   return (

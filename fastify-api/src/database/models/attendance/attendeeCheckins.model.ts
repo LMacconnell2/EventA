@@ -10,9 +10,17 @@ export const AttendeeCheckinsModel = {
 
             checkin_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-            location VARCHAR(100),
-            device VARCHAR(100),
+            location VARCHAR(255),
+            device VARCHAR(255),
             notes TEXT,
+
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+            created_by INTEGER,
+            updated_by INTEGER,
+
+            deleted_at TIMESTAMPTZ,
 
             CONSTRAINT fk_attendee_checkins_attendee
                 FOREIGN KEY(attendee_id)
@@ -26,5 +34,14 @@ export const AttendeeCheckinsModel = {
                 ON UPDATE CASCADE
                 ON DELETE SET NULL
         );
+
+        CREATE INDEX IF NOT EXISTS idx_checkins_attendee
+            ON attendee_checkins(attendee_id);
+
+        CREATE INDEX IF NOT EXISTS idx_checkins_checked_in_by
+            ON attendee_checkins(checked_in_by);
+
+        CREATE INDEX IF NOT EXISTS idx_checkins_time
+            ON attendee_checkins(checkin_time);
     `
 };

@@ -20,6 +20,7 @@ import ticketRoutes from "./routes/ticketRoutes/ticket.routes.js";
 import publicTicketRoutes from "./routes/ticketRoutes/public-ticket.routes.js";
 import attendeeRoutes from "./routes/attendeeRoutes/attendeeRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes/dashboardRoutes.js";
+import commerceRoutes from "./routes/commerceRoutes/commerceRoutes.js";
 
 const app = Fastify({
   logger: true,
@@ -152,6 +153,9 @@ const start = async () => {
     });
 
     await app.register(dashboardRoutes, {
+    });
+
+    await app.register(commerceRoutes, {
     });
 
     await testDatabaseConnection();
