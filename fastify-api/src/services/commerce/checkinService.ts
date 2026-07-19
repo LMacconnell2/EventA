@@ -2,14 +2,14 @@ import type { Pool } from "pg";
 import type {
   CreateCheckinBody,
   EventCheckinListQuery,
-} from "../types/commerce.types.js";
+} from "../../types/commerceTypes.js";
 import {
   CommerceError,
   assertAllowedSort,
   getPagination,
   getSortOrder,
   parseCsvIntegers,
-} from "../utils/commerce.js";
+} from "../../lib/commerce.js";
 
 const CHECKIN_SORTS = {
   checkin_time: "ac.checkin_time",

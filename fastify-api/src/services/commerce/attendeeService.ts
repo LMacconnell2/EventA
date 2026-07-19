@@ -2,7 +2,7 @@ import type { Pool } from "pg";
 import type {
   AttendeeListQuery,
   UpdateAttendeeBody,
-} from "../types/commerce.types.js";
+} from "../../types/commerceTypes.js";
 import {
   CommerceError,
   assertAllowedSort,
@@ -10,7 +10,7 @@ import {
   getSortOrder,
   parseBoolean,
   parseCsvIntegers,
-} from "../utils/commerce.js";
+} from "../../lib/commerce.js";
 
 const ATTENDEE_SORTS = {
   created_at: "a.created_at",

@@ -5,7 +5,7 @@ import type {
 import type {
   OrderListQuery,
   OrderPaymentStatus,
-} from "../types/commerce.types.js";
+} from "../../types/commerceTypes.js";
 import {
   CommerceError,
   assertAllowedSort,
@@ -13,7 +13,7 @@ import {
   getSortOrder,
   parseCsvIntegers,
   parseCsvStrings,
-} from "../utils/commerce.js";
+} from "../../lib/commerce.js";
 
 const ORDER_SORTS = {
   purchase_date: "o.purchase_date",

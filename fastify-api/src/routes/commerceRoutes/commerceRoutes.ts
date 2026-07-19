@@ -1,13 +1,20 @@
-import type {
-  FastifyInstance,
-  FastifyPluginAsync,
-  preHandlerHookHandler,
-} from "fastify";
-import type { Pool } from "pg";
+// src/routes/commerceRoutes/commerceRoutes.ts
 
-import type {
-  PaymentGatewayRegistry,
-} from "../../lib/paymentGateway.js";
+import type { FastifyInstance } from "fastify";
+
+import { db } from "../../database/db.js";
+
+import { authenticate } from "../../auth/authenticate.js";
+import {
+  authorizeAny,
+} from "../../auth/authorize.js";
+import {
+  optionalAuthenticate,
+} from "../../auth/optionalAuthenticate.js";
+
+import {
+  paymentGateways,
+} from "../../lib/paymentGateways.js";
 
 import { OrderService } from "../../services/commerce/orderService.js";
 import { PaymentService } from "../../services/commerce/paymentService.js";
@@ -36,65 +43,81 @@ import type {
   UpdateOrderStatusBody,
 } from "../../types/commerceTypes.js";
 
-export type CommerceRoutesOptions = {
-  pool: Pool;
+const canViewOrders = authorizeAny([
+  "orders.view",
+]);
 
-  authenticate: preHandlerHookHandler;
+const canEditOrders = authorizeAny([
+  "orders.edit",
+]);
 
-  authorize: (
-    permission: string,
-  ) => preHandlerHookHandler;
+const canRefundOrders = authorizeAny([
+  "orders.refund",
+]);
 
-  authorizeAny?: (
-    permissions: string[],
-  ) => preHandlerHookHandler;
+const canViewAttendees = authorizeAny([
+  "attendees.view",
+  "events.manage",
+]);
 
-  paymentGateways: PaymentGatewayRegistry;
+const canEditAttendees = authorizeAny([
+  "attendees.edit",
+  "events.manage",
+]);
 
-  optionalAuthenticate?: preHandlerHookHandler;
-};
+const canCheckInAttendees = authorizeAny([
+  "attendees.checkin",
+  "events.manage",
+]);
 
-const commerceRoutes: FastifyPluginAsync<
-  CommerceRoutesOptions
-> = async (
+export default async function commerceRoutes(
   app: FastifyInstance,
-  options: CommerceRoutesOptions,
-) => {
+) {
+  const orderService = new OrderService(db);
+
+  const paymentService = new PaymentService(
+    db,
+    paymentGateways,
+  );
+
+  const refundService = new RefundService(
+    db,
+    paymentGateways,
+  );
+
+  const attendeeService = new AttendeeService(db);
+
+  const checkinService = new CheckinService(db);
+
+  const publicCheckoutService =
+    new PublicCheckoutService(
+      db,
+      paymentGateways,
+    );
+
   const controllers = createCommerceControllers({
-    orders: new OrderService(options.pool),
-
-    payments: new PaymentService(
-      options.pool,
-      options.paymentGateways,
-    ),
-
-    refunds: new RefundService(
-      options.pool,
-      options.paymentGateways,
-    ),
-
-    attendees: new AttendeeService(options.pool),
-
-    checkins: new CheckinService(options.pool),
-
-    publicCheckout: new PublicCheckoutService(
-      options.pool,
-      options.paymentGateways,
-    ),
+    orders: orderService,
+    payments: paymentService,
+    refunds: refundService,
+    attendees: attendeeService,
+    checkins: checkinService,
+    publicCheckout: publicCheckoutService,
   });
 
-  const secured = (permission: string) => ({
-    preHandler: [
-      options.authenticate,
-      options.authorize(permission),
-    ],
-  });
+  /*
+   * Orders
+   */
 
   app.get<{
     Querystring: OrderListQuery;
   }>(
     "/api/orders",
-    secured("orders.view"),
+    {
+      preHandler: [
+        authenticate,
+        canViewOrders,
+      ],
+    },
     controllers.listOrders,
   );
 
@@ -102,7 +125,12 @@ const commerceRoutes: FastifyPluginAsync<
     Params: IdParams;
   }>(
     "/api/orders/:orderId",
-    secured("orders.view"),
+    {
+      preHandler: [
+        authenticate,
+        canViewOrders,
+      ],
+    },
     controllers.getOrder,
   );
 
@@ -111,7 +139,12 @@ const commerceRoutes: FastifyPluginAsync<
     Body: UpdateOrderStatusBody;
   }>(
     "/api/orders/:orderId/status",
-    secured("orders.edit"),
+    {
+      preHandler: [
+        authenticate,
+        canEditOrders,
+      ],
+    },
     controllers.updateOrderStatus,
   );
 
@@ -120,15 +153,29 @@ const commerceRoutes: FastifyPluginAsync<
     Querystring: OrderListQuery;
   }>(
     "/api/events/:eventId/orders",
-    secured("orders.view"),
+    {
+      preHandler: [
+        authenticate,
+        canViewOrders,
+      ],
+    },
     controllers.listEventOrders,
   );
+
+  /*
+   * Payments
+   */
 
   app.get<{
     Querystring: PaymentListQuery;
   }>(
     "/api/payments",
-    secured("orders.view"),
+    {
+      preHandler: [
+        authenticate,
+        canViewOrders,
+      ],
+    },
     controllers.listPayments,
   );
 
@@ -136,7 +183,12 @@ const commerceRoutes: FastifyPluginAsync<
     Params: IdParams;
   }>(
     "/api/payments/:paymentId",
-    secured("orders.view"),
+    {
+      preHandler: [
+        authenticate,
+        canViewOrders,
+      ],
+    },
     controllers.getPayment,
   );
 
@@ -145,9 +197,22 @@ const commerceRoutes: FastifyPluginAsync<
     Querystring: PaymentListQuery;
   }>(
     "/api/events/:eventId/payments",
-    secured("orders.view"),
+    {
+      preHandler: [
+        authenticate,
+        canViewOrders,
+      ],
+    },
     controllers.listEventPayments,
   );
+
+  /*
+   * Payment webhooks
+   *
+   * This route must not use authenticate.
+   * Provider signature verification happens in
+   * the payment gateway adapter.
+   */
 
   app.post<{
     Params: IdParams;
@@ -156,11 +221,20 @@ const commerceRoutes: FastifyPluginAsync<
     controllers.paymentWebhook,
   );
 
+  /*
+   * Refunds
+   */
+
   app.get<{
     Querystring: RefundListQuery;
   }>(
     "/api/refunds",
-    secured("orders.view"),
+    {
+      preHandler: [
+        authenticate,
+        canViewOrders,
+      ],
+    },
     controllers.listRefunds,
   );
 
@@ -168,7 +242,12 @@ const commerceRoutes: FastifyPluginAsync<
     Params: IdParams;
   }>(
     "/api/refunds/:refundId",
-    secured("orders.view"),
+    {
+      preHandler: [
+        authenticate,
+        canViewOrders,
+      ],
+    },
     controllers.getRefund,
   );
 
@@ -177,7 +256,12 @@ const commerceRoutes: FastifyPluginAsync<
     Body: CreateRefundBody;
   }>(
     "/api/payments/:paymentId/refunds",
-    secured("orders.refund"),
+    {
+      preHandler: [
+        authenticate,
+        canRefundOrders,
+      ],
+    },
     controllers.createRefund,
   );
 
@@ -186,15 +270,29 @@ const commerceRoutes: FastifyPluginAsync<
     Querystring: RefundListQuery;
   }>(
     "/api/events/:eventId/refunds",
-    secured("orders.view"),
+    {
+      preHandler: [
+        authenticate,
+        canViewOrders,
+      ],
+    },
     controllers.listEventRefunds,
   );
+
+  /*
+   * Attendees
+   */
 
   app.get<{
     Querystring: AttendeeListQuery;
   }>(
     "/api/attendees",
-    secured("attendees.view"),
+    {
+      preHandler: [
+        authenticate,
+        canViewAttendees,
+      ],
+    },
     controllers.listAttendees,
   );
 
@@ -202,7 +300,12 @@ const commerceRoutes: FastifyPluginAsync<
     Params: IdParams;
   }>(
     "/api/attendees/:attendeeId",
-    secured("attendees.view"),
+    {
+      preHandler: [
+        authenticate,
+        canViewAttendees,
+      ],
+    },
     controllers.getAttendee,
   );
 
@@ -211,25 +314,47 @@ const commerceRoutes: FastifyPluginAsync<
     Body: UpdateAttendeeBody;
   }>(
     "/api/attendees/:attendeeId",
-    secured("attendees.edit"),
+    {
+      preHandler: [
+        authenticate,
+        canEditAttendees,
+      ],
+    },
     controllers.updateAttendee,
   );
 
-  app.get<{
-    Params: IdParams;
-    Querystring: AttendeeListQuery;
-  }>(
-    "/api/events/:eventId/attendees",
-    secured("attendees.view"),
-    controllers.listEventAttendees,
-  );
+  // THIS IS A DUPLICATE ROUTE FOR LISTING EVENT ATTENDEES, BUT IT'S COMMENTED OUT.
+  // THE ROUTE IS ALSO DEFINED IN attendeeRoutes.ts, WHICH IS THE PREFERRED LOCATION.
+  // KEEPING THIS COMMENTED OUT FOR REFERENCE, BUT IT SHOULD NOT BE USED.
+  // app.get<{
+  //   Params: IdParams;
+  //   Querystring: AttendeeListQuery;
+  // }>(
+  //   "/api/events/:eventId/attendees",
+  //   {
+  //     preHandler: [
+  //       authenticate,
+  //       canViewAttendees,
+  //     ],
+  //   },
+  //   controllers.listEventAttendees,
+  // );
+
+  /*
+   * Check-ins
+   */
 
   app.get<{
     Params: IdParams;
     Querystring: EventCheckinListQuery;
   }>(
     "/api/events/:eventId/checkins",
-    secured("attendees.view"),
+    {
+      preHandler: [
+        authenticate,
+        canViewAttendees,
+      ],
+    },
     controllers.listEventCheckins,
   );
 
@@ -239,20 +364,10 @@ const commerceRoutes: FastifyPluginAsync<
   }>(
     "/api/events/:eventId/checkins",
     {
-      preHandler: options.authorizeAny
-        ? [
-            options.authenticate,
-            options.authorizeAny([
-              "attendees.checkin",
-              "events.manage",
-            ]),
-          ]
-        : [
-            options.authenticate,
-            options.authorize(
-              "attendees.checkin",
-            ),
-          ],
+      preHandler: [
+        authenticate,
+        canCheckInAttendees,
+      ],
     },
     controllers.createCheckin,
   );
@@ -262,38 +377,32 @@ const commerceRoutes: FastifyPluginAsync<
   }>(
     "/api/events/:eventId/checkins/:checkinId",
     {
-      preHandler: options.authorizeAny
-        ? [
-            options.authenticate,
-            options.authorizeAny([
-              "attendees.checkin",
-              "events.manage",
-            ]),
-          ]
-        : [
-            options.authenticate,
-            options.authorize(
-              "attendees.checkin",
-            ),
-          ],
+      preHandler: [
+        authenticate,
+        canCheckInAttendees,
+      ],
     },
     controllers.deleteCheckin,
   );
 
-  const optionalAuth = options.optionalAuthenticate
-    ? {
-        preHandler: [
-          options.optionalAuthenticate,
-        ],
-      }
-    : {};
+  /*
+   * Public checkout
+   *
+   * optionalAuthenticate should populate appUser
+   * when a valid session exists, but must not return
+   * 401 when there is no session.
+   */
 
   app.post<{
     Params: IdParams;
     Body: CreateCheckoutBody;
   }>(
     "/api/public/events/:eventId/checkout",
-    optionalAuth,
+    {
+      preHandler: [
+        optionalAuthenticate,
+      ],
+    },
     controllers.createCheckout,
   );
 
@@ -302,7 +411,11 @@ const commerceRoutes: FastifyPluginAsync<
     Body: CreatePublicOrderBody;
   }>(
     "/api/public/events/:eventId/orders",
-    optionalAuth,
+    {
+      preHandler: [
+        optionalAuthenticate,
+      ],
+    },
     controllers.createPublicOrder,
   );
 
@@ -311,7 +424,11 @@ const commerceRoutes: FastifyPluginAsync<
     Querystring: ConfirmationQuery;
   }>(
     "/api/public/events/:eventId/orders/:orderReference/confirmation",
-    optionalAuth,
+    {
+      preHandler: [
+        optionalAuthenticate,
+      ],
+    },
     controllers.getPublicConfirmation,
   );
 
@@ -321,6 +438,4 @@ const commerceRoutes: FastifyPluginAsync<
     "/api/public/events/:eventId/checkout/:checkoutToken/release",
     controllers.releaseCheckout,
   );
-};
-
-export default commerceRoutes;
+}

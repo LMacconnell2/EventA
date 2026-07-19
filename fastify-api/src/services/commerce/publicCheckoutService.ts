@@ -5,10 +5,10 @@ import type {
 import type {
   CreateCheckoutBody,
   CreatePublicOrderBody,
-} from "../types/commerce.types.js";
+} from "../../types/commerceTypes.js";
 import type {
   PaymentGatewayRegistry,
-} from "../payments/paymentGateway.js";
+} from "../../lib/paymentGateway.js";
 import {
   CommerceError,
   generateOpaqueToken,
@@ -17,7 +17,7 @@ import {
   isUniqueViolation,
   money,
   roundMoney,
-} from "../utils/commerce.js";
+} from "../../lib/commerce.js";
 
 type TicketRow = {
   ticket_id: number;
