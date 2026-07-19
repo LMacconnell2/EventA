@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
+import fastifyRawBody from "fastify-raw-body";
 
 import { auth } from "./auth/auth.js";
 import { db, testDatabaseConnection, closeDatabaseConnection } from "./database/db.js";
@@ -104,6 +105,13 @@ const start = async () => {
 
     await app.register(multipart, {
       attachFieldsToBody: false,
+    });
+
+    await app.register(fastifyRawBody, {
+      field: "rawBody",
+      global: false,
+      encoding: false,
+      runFirst: true,
     });
 
     await app.register(userRoutes, {

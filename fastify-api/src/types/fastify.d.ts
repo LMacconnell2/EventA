@@ -7,6 +7,7 @@ import type { PaymentGatewayRegistry } from "../lib/paymentGateway.js";
 declare module "fastify" {
   interface FastifyRequest {
     appUser: AuthenticatedUser | null;
+    rawBody?: Buffer;
   }
 }
 

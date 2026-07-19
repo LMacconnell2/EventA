@@ -132,3 +132,7 @@ export type CreatePublicOrderBody = {
 export type ConfirmationQuery = {
   token?: string;
 };
+
+export type PaymentProviderParams = {
+  provider: string;
+};
