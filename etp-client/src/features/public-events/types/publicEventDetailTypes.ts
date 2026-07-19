@@ -128,3 +128,70 @@ export type PublicTicketAvailability = {
   user_can_purchase: boolean;
 };
 
+export type PublicCheckoutItemRequest = {
+  ticket_id: number;
+  quantity: number;
+};
+
+export type CreatePublicCheckoutRequest = {
+  items: PublicCheckoutItemRequest[];
+};
+
+export type PublicCheckoutLineItem = {
+  ticket_id: number;
+  ticket_name: string;
+  quantity: number;
+  unit_price: string;
+  line_total: string;
+};
+
+export type PublicCheckoutQuote = {
+  checkout_token: string;
+  event_id: number;
+  currency: "USD" | string;
+  items: PublicCheckoutLineItem[];
+  subtotal: string;
+  fees: string;
+  total: string;
+  expires_at: string;
+};
+
+export type PublicCheckoutCustomer = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  confirm_email: string;
+  phone: string;
+};
+
+export type CreatePublicOrderRequest = {
+  checkout_token: string;
+  customer: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string | null;
+  };
+  /** Token/PaymentMethod ID created by Stripe Elements or another provider. */
+  payment_method_id: string;
+};
+
+export type PublicOrderConfirmation = {
+  order_id: number;
+  order_reference: string;
+  event_id: number;
+  status: "paid" | "processing";
+  currency: string;
+  customer: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string | null;
+  };
+  items: PublicCheckoutLineItem[];
+  subtotal: string;
+  fees: string;
+  total_paid: string;
+  created_at: string;
+};
+

@@ -2,7 +2,11 @@ import type {
   PublicEventDetailResponse,
   PublicEventTicketsResponse,
   PublicTicketAvailability,
-} from "../types/PublicEventDetailTypes";
+    CreatePublicCheckoutRequest,
+  CreatePublicOrderRequest,
+  PublicCheckoutQuote,
+  PublicOrderConfirmation,
+} from "../types/publicEventDetailTypes";
 
 const API_URL =
   import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -42,6 +46,25 @@ async function parseResponse<T>(
   }
 
   return body as T;
+}
+
+async function postJson<TResponse, TBody>(
+  url: string,
+  body: TBody,
+  signal?: AbortSignal,
+): Promise<TResponse> {
+  const response = await fetch(url, {
+    method: "POST",
+    credentials: "include",
+    signal,
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  return parseResponse<TResponse>(response);
 }
 
 export async function getPublicEventDetail(
@@ -115,4 +138,54 @@ export async function getPublicTicketAvailability(
   );
 
   return parseResponse<PublicTicketAvailability>(response);
+}
+
+export async function createPublicEventCheckout({
+  eventId,
+  body,
+  signal,
+}: {
+  eventId: number;
+  body: CreatePublicCheckoutRequest;
+  signal?: AbortSignal;
+}): Promise<PublicCheckoutQuote> {
+  return postJson<PublicCheckoutQuote, CreatePublicCheckoutRequest>(
+    `${API_URL}/api/public/events/${eventId}/checkout`,
+    body,
+    signal,
+  );
+}
+
+export async function createPublicEventOrder({
+  eventId,
+  body,
+  signal,
+}: {
+  eventId: number;
+  body: CreatePublicOrderRequest;
+  signal?: AbortSignal;
+}): Promise<PublicOrderConfirmation> {
+  return postJson<PublicOrderConfirmation, CreatePublicOrderRequest>(
+    `${API_URL}/api/public/events/${eventId}/orders`,
+    body,
+    signal,
+  );
+}
+
+export async function getPublicOrderConfirmation(
+  eventId: number,
+  orderReference: string,
+  signal?: AbortSignal,
+): Promise<PublicOrderConfirmation> {
+  const response = await fetch(
+    `${API_URL}/api/public/events/${eventId}/orders/${encodeURIComponent(orderReference)}`,
+    {
+      method: "GET",
+      credentials: "include",
+      signal,
+      headers: { Accept: "application/json" },
+    },
+  );
+
+  return parseResponse<PublicOrderConfirmation>(response);
 }

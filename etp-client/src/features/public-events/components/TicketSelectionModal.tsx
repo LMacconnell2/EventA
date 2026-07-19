@@ -1,10 +1,13 @@
-
 import {
   AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  CircleCheck,
   LoaderCircle,
+  LockKeyhole,
   Minus,
   Plus,
-  Ticket,
   X,
 } from "lucide-react";
 import {
@@ -13,143 +16,110 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  useMutation,
-  useQuery,
-} from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 import {
+  createPublicEventCheckout,
+  createPublicEventOrder,
   getPublicEventTickets,
-  getPublicTicketAvailability,
 } from "../api/publicEventDetailApi";
 
 import type {
+  PublicCheckoutCustomer,
+  PublicCheckoutQuote,
+  PublicOrderConfirmation,
   PublicPurchasableTicket,
-} from "../types/PublicEventDetailTypes";
+} from "../types/publicEventDetailTypes";
+
+import "./TicketSelectionModal.css";
+
+type CheckoutStep = 1 | 2 | 3 | 4;
+type TicketQuantities = Record<number, number>;
+
+type PaymentDetails = {
+  nameOnCard: string;
+  cardNumber: string;
+  expiry: string;
+  cvv: string;
+};
 
 type TicketSelectionModalProps = {
   open: boolean;
   eventId: number;
   eventTitle: string;
   onClose: () => void;
+  /**
+   * Replace this with Stripe Elements, Adyen, Braintree, etc. in production.
+   * It must return a provider-created payment method/token. Never send raw card
+   * numbers to your own API in production.
+   */
+  createPaymentMethod?: (
+    payment: PaymentDetails,
+  ) => Promise<string>;
 };
 
-type TicketQuantities = Record<number, number>;
+const EMPTY_CUSTOMER: PublicCheckoutCustomer = {
+  first_name: "",
+  last_name: "",
+  email: "",
+  confirm_email: "",
+  phone: "",
+};
+
+const EMPTY_PAYMENT: PaymentDetails = {
+  nameOnCard: "",
+  cardNumber: "",
+  expiry: "",
+  cvv: "",
+};
 
 function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Ticket information could not be loaded.";
+  return error instanceof Error
+    ? error.message
+    : "Something went wrong. Please try again.";
 }
 
-function parsePrice(value: string): number {
+function parsePrice(value: string | number): number {
   const price = Number(value);
-
   return Number.isFinite(price) ? price : 0;
 }
 
 function formatCurrency(value: string | number): string {
-  const price = Number(value);
-
-  if (!Number.isFinite(price)) {
-    return String(value);
-  }
-
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits:
-      Number.isInteger(price) ? 0 : 2,
-  }).format(price);
+    maximumFractionDigits: Number.isInteger(Number(value)) ? 0 : 2,
+  }).format(parsePrice(value));
 }
 
-function formatSaleDate(value: string | null): string | null {
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
+function getMaximumQuantity(ticket: PublicPurchasableTicket): number {
+  return ticket.remaining_quantity === null
+    ? ticket.max_per_order
+    : Math.min(ticket.max_per_order, ticket.remaining_quantity);
 }
 
-function getMaximumQuantity(
-  ticket: PublicPurchasableTicket,
-): number {
-  if (ticket.remaining_quantity === null) {
-    return ticket.max_per_order;
-  }
-
-  return Math.min(
-    ticket.max_per_order,
-    ticket.remaining_quantity,
-  );
-}
-
-function ticketCanBeSelected(
-  ticket: PublicPurchasableTicket,
-): boolean {
-  const hasRemainingInventory =
-    ticket.remaining_quantity === null ||
-    ticket.remaining_quantity > 0;
-
+function ticketCanBeSelected(ticket: PublicPurchasableTicket): boolean {
   return (
     ticket.sales_are_open &&
     ticket.user_can_purchase &&
-    hasRemainingInventory
+    (ticket.remaining_quantity === null || ticket.remaining_quantity > 0)
   );
 }
 
-function getTicketStatus(
-  ticket: PublicPurchasableTicket,
-): string {
-  if (!ticket.user_can_purchase) {
-    return "Not available for your account";
-  }
-
-  if (!ticket.sales_are_open) {
-    const saleStart = formatSaleDate(ticket.sale_start);
-    const saleEnd = formatSaleDate(ticket.sale_end);
-
-    if (
-      ticket.sale_start &&
-      new Date(ticket.sale_start).getTime() > Date.now()
-    ) {
-      return saleStart
-        ? `Sales begin ${saleStart}`
-        : "Sales have not started";
-    }
-
-    if (ticket.sale_end) {
-      return saleEnd
-        ? `Sales ended ${saleEnd}`
-        : "Sales have ended";
-    }
-
-    return "Sales are closed";
-  }
-
-  if (ticket.remaining_quantity === 0) {
-    return "Sold out";
-  }
-
-  if (ticket.remaining_quantity === null) {
-    return "Available";
-  }
-
+function getTicketStatus(ticket: PublicPurchasableTicket): string {
+  if (!ticket.user_can_purchase) return "Not available for your account";
+  if (!ticket.sales_are_open) return "Sales are closed";
+  if (ticket.remaining_quantity === 0) return "Sold out";
+  if (ticket.remaining_quantity === null) return "Available";
   return `${ticket.remaining_quantity.toLocaleString()} remaining`;
+}
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function digitsOnly(value: string): string {
+  return value.replace(/\D/g, "");
 }
 
 export function TicketSelectionModal({
@@ -157,15 +127,20 @@ export function TicketSelectionModal({
   eventId,
   eventTitle,
   onClose,
+  createPaymentMethod,
 }: TicketSelectionModalProps) {
-  const closeButtonRef =
-    useRef<HTMLButtonElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const [quantities, setQuantities] =
-    useState<TicketQuantities>({});
-
-  const [selectionError, setSelectionError] =
-    useState<string | null>(null);
+  const [step, setStep] = useState<CheckoutStep>(1);
+  const [quantities, setQuantities] = useState<TicketQuantities>({});
+  const [customer, setCustomer] =
+    useState<PublicCheckoutCustomer>(EMPTY_CUSTOMER);
+  const [payment, setPayment] =
+    useState<PaymentDetails>(EMPTY_PAYMENT);
+  const [quote, setQuote] = useState<PublicCheckoutQuote | null>(null);
+  const [confirmation, setConfirmation] =
+    useState<PublicOrderConfirmation | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const ticketsQuery = useQuery({
     queryKey: ["public-event-tickets", eventId],
@@ -175,53 +150,50 @@ export function TicketSelectionModal({
     staleTime: 30_000,
   });
 
-  const availabilityMutation = useMutation({
-    mutationFn: async ({
-      ticketId,
-    }: {
-      ticketId: number;
-    }) =>
-      getPublicTicketAvailability(
-        eventId,
-        ticketId,
-      ),
+  const quoteMutation = useMutation({
+    mutationFn: createPublicEventCheckout,
+    onSuccess: (response) => {
+      setQuote(response);
+      setStep(2);
+    },
+  });
+
+  const orderMutation = useMutation({
+    mutationFn: createPublicEventOrder,
+    onSuccess: (response) => {
+      setConfirmation(response);
+      setStep(4);
+    },
   });
 
   useEffect(() => {
     if (!open) {
+      setStep(1);
       setQuantities({});
-      setSelectionError(null);
-      availabilityMutation.reset();
+      setCustomer(EMPTY_CUSTOMER);
+      setPayment(EMPTY_PAYMENT);
+      setQuote(null);
+      setConfirmation(null);
+      setFormError(null);
+      quoteMutation.reset();
+      orderMutation.reset();
       return;
     }
 
     closeButtonRef.current?.focus();
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
-
-    const originalOverflow =
-      document.body.style.overflow;
-
+    const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    document.addEventListener(
-      "keydown",
-      handleKeyDown,
-    );
 
-    return () => {
-      document.body.style.overflow =
-        originalOverflow;
-
-      document.removeEventListener(
-        "keydown",
-        handleKeyDown,
-      );
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !orderMutation.isPending) onClose();
     };
-  }, [open, onClose]);
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open, onClose, orderMutation.isPending]);
 
   const tickets = ticketsQuery.data?.data ?? [];
 
@@ -232,442 +204,565 @@ export function TicketSelectionModal({
           ticket,
           quantity: quantities[ticket.ticket_id] ?? 0,
         }))
-        .filter((selection) => selection.quantity > 0),
+        .filter(({ quantity }) => quantity > 0),
     [tickets, quantities],
   );
 
   const selectedQuantity = selectedTickets.reduce(
-    (total, selection) =>
-      total + selection.quantity,
+    (sum, item) => sum + item.quantity,
     0,
   );
 
-  const selectedTotal = selectedTickets.reduce(
-    (total, selection) =>
-      total +
-      parsePrice(selection.ticket.ticket_price) *
-        selection.quantity,
+  const localTotal = selectedTickets.reduce(
+    (sum, item) =>
+      sum + parsePrice(item.ticket.ticket_price) * item.quantity,
     0,
   );
+
+  const displayTotal = quote?.total ?? localTotal;
 
   function setTicketQuantity(
     ticket: PublicPurchasableTicket,
     requestedQuantity: number,
   ) {
-    if (!ticketCanBeSelected(ticket)) {
-      return;
-    }
-
-    const maximum = getMaximumQuantity(ticket);
+    if (!ticketCanBeSelected(ticket)) return;
 
     const nextQuantity = Math.max(
       0,
-      Math.min(maximum, requestedQuantity),
+      Math.min(getMaximumQuantity(ticket), requestedQuantity),
     );
 
-    setSelectionError(null);
-
+    setFormError(null);
+    setQuote(null);
     setQuantities((current) => ({
       ...current,
       [ticket.ticket_id]: nextQuantity,
     }));
   }
 
-  function incrementTicket(
-    ticket: PublicPurchasableTicket,
-  ) {
-    const currentQuantity =
-      quantities[ticket.ticket_id] ?? 0;
-
-    const nextQuantity =
-      currentQuantity === 0
-        ? ticket.min_per_order
-        : currentQuantity + 1;
-
-    setTicketQuantity(ticket, nextQuantity);
-  }
-
-  function decrementTicket(
-    ticket: PublicPurchasableTicket,
-  ) {
-    const currentQuantity =
-      quantities[ticket.ticket_id] ?? 0;
-
-    if (currentQuantity <= ticket.min_per_order) {
-      setTicketQuantity(ticket, 0);
-      return;
-    }
-
+  function incrementTicket(ticket: PublicPurchasableTicket) {
+    const current = quantities[ticket.ticket_id] ?? 0;
     setTicketQuantity(
       ticket,
-      currentQuantity - 1,
+      current === 0 ? ticket.min_per_order : current + 1,
     );
   }
 
-  async function handleContinue() {
-    setSelectionError(null);
+  function decrementTicket(ticket: PublicPurchasableTicket) {
+    const current = quantities[ticket.ticket_id] ?? 0;
+    setTicketQuantity(
+      ticket,
+      current <= ticket.min_per_order ? 0 : current - 1,
+    );
+  }
+
+  async function continueFromTickets() {
+    setFormError(null);
 
     if (selectedTickets.length === 0) {
-      setSelectionError(
-        "Select at least one ticket to continue.",
+      setFormError("Select at least one ticket to continue.");
+      return;
+    }
+
+    try {
+      await quoteMutation.mutateAsync({
+        eventId,
+        body: {
+          items: selectedTickets.map(({ ticket, quantity }) => ({
+            ticket_id: ticket.ticket_id,
+            quantity,
+          })),
+        },
+      });
+    } catch (error) {
+      setFormError(getErrorMessage(error));
+      void ticketsQuery.refetch();
+    }
+  }
+
+  function continueFromDetails() {
+    setFormError(null);
+
+    if (!customer.first_name.trim() || !customer.last_name.trim()) {
+      setFormError("Enter your first and last name.");
+      return;
+    }
+
+    if (!isValidEmail(customer.email)) {
+      setFormError("Enter a valid email address.");
+      return;
+    }
+
+    if (customer.email.trim() !== customer.confirm_email.trim()) {
+      setFormError("The email addresses do not match.");
+      return;
+    }
+
+    setStep(3);
+  }
+
+  async function pay() {
+    setFormError(null);
+
+    if (!quote) {
+      setFormError("Your checkout quote has expired. Please select tickets again.");
+      setStep(1);
+      return;
+    }
+
+    if (!payment.nameOnCard.trim()) {
+      setFormError("Enter the name on the card.");
+      return;
+    }
+
+    if (!createPaymentMethod) {
+      setFormError(
+        "No payment provider is connected. Pass createPaymentMethod to TicketSelectionModal.",
       );
       return;
     }
 
     try {
-      for (const selection of selectedTickets) {
-        const availability =
-          await availabilityMutation.mutateAsync({
-            ticketId:
-              selection.ticket.ticket_id,
-          });
+      const paymentMethodId = await createPaymentMethod(payment);
 
-        if (!availability.user_can_purchase) {
-          throw new Error(
-            `${selection.ticket.ticket_name} is not available for your account.`,
-          );
-        }
-
-        if (
-          !availability.sales_are_open ||
-          !availability.is_available
-        ) {
-          throw new Error(
-            `${selection.ticket.ticket_name} is no longer available.`,
-          );
-        }
-
-        if (
-          availability.remaining_quantity !== null &&
-          selection.quantity >
-            availability.remaining_quantity
-        ) {
-          throw new Error(
-            `Only ${availability.remaining_quantity} ${
-              availability.remaining_quantity === 1
-                ? "ticket is"
-                : "tickets are"
-            } currently available for ${selection.ticket.ticket_name}.`,
-          );
-        }
-
-        if (
-          selection.quantity <
-            availability.min_per_order ||
-          selection.quantity >
-            availability.max_per_order
-        ) {
-          throw new Error(
-            `${selection.ticket.ticket_name} requires between ${availability.min_per_order} and ${availability.max_per_order} tickets per order.`,
-          );
-        }
-      }
-
-      /*
-       * The selected ticket payload is ready to be sent
-       * to your cart or checkout flow.
-       */
-      const checkoutSelection = selectedTickets.map(
-        ({ ticket, quantity }) => ({
-          event_id: eventId,
-          ticket_id: ticket.ticket_id,
-          quantity,
-          unit_price: ticket.ticket_price,
-        }),
-      );
-
-      console.log(
-        "Ticket selection:",
-        checkoutSelection,
-      );
-
-      setSelectionError(
-        "Ticket availability was confirmed. Checkout can now be started.",
-      );
+      await orderMutation.mutateAsync({
+        eventId,
+        body: {
+          checkout_token: quote.checkout_token,
+          customer: {
+            first_name: customer.first_name.trim(),
+            last_name: customer.last_name.trim(),
+            email: customer.email.trim(),
+            phone: customer.phone.trim() || null,
+          },
+          payment_method_id: paymentMethodId,
+        },
+      });
     } catch (error) {
-      setSelectionError(getErrorMessage(error));
-
-      void ticketsQuery.refetch();
+      setFormError(getErrorMessage(error));
     }
   }
 
-  if (!open) {
-    return null;
+  function goBack() {
+    setFormError(null);
+    if (step === 2) setStep(1);
+    if (step === 3) setStep(2);
   }
+
+  if (!open) return null;
+
+  const steps = [
+    "Select Tickets",
+    "Your Details",
+    "Payment",
+    "Confirmation",
+  ] as const;
 
   return (
     <div
-      className="public-ticket-modal-backdrop"
+      className="ticket-checkout-backdrop"
       role="presentation"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
+        if (event.target === event.currentTarget && !orderMutation.isPending) {
           onClose();
         }
       }}
     >
       <section
-        className="public-ticket-modal"
+        className="ticket-checkout"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="public-ticket-modal-title"
+        aria-labelledby="ticket-checkout-title"
       >
-        <header className="public-ticket-modal__header">
+        <header className="ticket-checkout__header">
           <div>
-            <p>Choose tickets</p>
-
-            <h2 id="public-ticket-modal-title">
-              {eventTitle}
+            <h2 id="ticket-checkout-title">
+              {step === 4 ? "You're in!" : "Get Tickets"}
             </h2>
+            <p>{eventTitle}</p>
           </div>
 
-          <button
-            ref={closeButtonRef}
-            type="button"
-            aria-label="Close ticket selection"
-            onClick={onClose}
-          >
-            <X size={21} />
-          </button>
+          {step !== 4 && (
+            <button
+              ref={closeButtonRef}
+              type="button"
+              className="ticket-checkout__close"
+              aria-label="Close checkout"
+              onClick={onClose}
+              disabled={orderMutation.isPending}
+            >
+              <X size={21} />
+            </button>
+          )}
         </header>
 
-        <div className="public-ticket-modal__body">
-          {ticketsQuery.isPending && (
-            <div className="public-ticket-modal-state">
-              <LoaderCircle
-                className="public-ticket-modal-spinner"
-                size={30}
-                aria-hidden="true"
-              />
+        <ol className="ticket-checkout-steps" aria-label="Checkout progress">
+          {steps.map((label, index) => {
+            const number = (index + 1) as CheckoutStep;
+            const complete = step > number;
+            const active = step === number;
 
-              <strong>Loading tickets</strong>
-              <p>
-                Checking current ticket availability.
-              </p>
-            </div>
-          )}
-
-          {ticketsQuery.isError && (
-            <div className="public-ticket-modal-state public-ticket-modal-state--error">
-              <AlertCircle
-                size={30}
-                aria-hidden="true"
-              />
-
-              <strong>
-                Unable to load tickets
-              </strong>
-
-              <p>
-                {getErrorMessage(
-                  ticketsQuery.error,
-                )}
-              </p>
-
-              <button
-                type="button"
-                onClick={() => {
-                  void ticketsQuery.refetch();
-                }}
+            return (
+              <li
+                key={label}
+                className={`${active ? "is-active" : ""} ${
+                  complete ? "is-complete" : ""
+                }`}
               >
-                Try Again
-              </button>
+                <span className="ticket-checkout-steps__circle">
+                  {complete ? <Check size={18} /> : number}
+                </span>
+                <span>{label}</span>
+              </li>
+            );
+          })}
+        </ol>
+
+        <div className="ticket-checkout__scroll-area">
+          {formError && (
+            <div className="ticket-checkout__error" role="alert">
+              <AlertCircle size={18} />
+              <span>{formError}</span>
             </div>
           )}
 
-          {ticketsQuery.isSuccess &&
-            tickets.length === 0 && (
-              <div className="public-ticket-modal-state">
-                <Ticket
-                  size={32}
-                  aria-hidden="true"
+          {step === 1 && (
+            <div className="ticket-checkout-ticket-list">
+              {ticketsQuery.isPending && (
+                <div className="ticket-checkout__state">
+                  <LoaderCircle className="ticket-checkout__spinner" />
+                  <strong>Loading tickets</strong>
+                </div>
+              )}
+
+              {ticketsQuery.isError && (
+                <div className="ticket-checkout__state">
+                  <AlertCircle />
+                  <strong>Unable to load tickets</strong>
+                  <p>{getErrorMessage(ticketsQuery.error)}</p>
+                  <button type="button" onClick={() => void ticketsQuery.refetch()}>
+                    Try again
+                  </button>
+                </div>
+              )}
+
+              {ticketsQuery.isSuccess && tickets.length === 0 && (
+                <div className="ticket-checkout__state">
+                  <strong>No tickets are currently available.</strong>
+                </div>
+              )}
+
+              {tickets.map((ticket) => {
+                const quantity = quantities[ticket.ticket_id] ?? 0;
+                const maximum = getMaximumQuantity(ticket);
+                const selectable = ticketCanBeSelected(ticket);
+
+                return (
+                  <article
+                    key={ticket.ticket_id}
+                    className={`ticket-checkout-ticket ${
+                      selectable ? "" : "is-disabled"
+                    }`}
+                  >
+                    <div>
+                      <h3>{ticket.ticket_name}</h3>
+                      {ticket.ticket_description && <p>{ticket.ticket_description}</p>}
+                      <small>{getTicketStatus(ticket)}</small>
+                    </div>
+                    <div className="ticket-checkout-ticket__actions">
+                      <strong>{formatCurrency(ticket.ticket_price)}</strong>
+                      <div className="ticket-checkout-quantity">
+                        <button
+                          type="button"
+                          aria-label={`Remove one ${ticket.ticket_name}`}
+                          disabled={!selectable || quantity === 0}
+                          onClick={() => decrementTicket(ticket)}
+                        >
+                          <Minus size={16} />
+                        </button>
+                        <output>{quantity}</output>
+                        <button
+                          type="button"
+                          aria-label={`Add one ${ticket.ticket_name}`}
+                          disabled={!selectable || quantity >= maximum}
+                          onClick={() => incrementTicket(ticket)}
+                        >
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+
+          {step === 2 && quote && (
+            <div className="ticket-checkout-form">
+              <div className="ticket-checkout-form__row">
+                <label>
+                  First name *
+                  <input
+                    value={customer.first_name}
+                    onChange={(event) =>
+                      setCustomer((current) => ({
+                        ...current,
+                        first_name: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label>
+                  Last name *
+                  <input
+                    value={customer.last_name}
+                    onChange={(event) =>
+                      setCustomer((current) => ({
+                        ...current,
+                        last_name: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+
+              <label>
+                Email address *
+                <input
+                  type="email"
+                  placeholder="jane@example.com"
+                  value={customer.email}
+                  onChange={(event) =>
+                    setCustomer((current) => ({
+                      ...current,
+                      email: event.target.value,
+                    }))
+                  }
                 />
+              </label>
 
-                <strong>
-                  No tickets are currently available
-                </strong>
+              <label>
+                Confirm email *
+                <input
+                  type="email"
+                  placeholder="jane@example.com"
+                  value={customer.confirm_email}
+                  onChange={(event) =>
+                    setCustomer((current) => ({
+                      ...current,
+                      confirm_email: event.target.value,
+                    }))
+                  }
+                />
+              </label>
 
-                <p>
-                  Tickets may not be published yet, or
-                  they may not be available for your
-                  account.
-                </p>
+              <label>
+                Phone number
+                <input
+                  type="tel"
+                  placeholder="+1 (555) 000-0000"
+                  value={customer.phone}
+                  onChange={(event) =>
+                    setCustomer((current) => ({
+                      ...current,
+                      phone: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <OrderSummary quote={quote} />
+            </div>
+          )}
+
+          {step === 3 && quote && (
+            <div className="ticket-checkout-form">
+              <div className="ticket-checkout-security">
+                <LockKeyhole size={18} />
+                Your payment info is encrypted and secure
               </div>
-            )}
 
-          {ticketsQuery.isSuccess &&
-            tickets.length > 0 && (
-              <div className="public-ticket-selection-list">
-                {tickets.map((ticket) => {
-                  const quantity =
-                    quantities[ticket.ticket_id] ?? 0;
+              <label>
+                Name on card *
+                <input
+                  placeholder="Jane Doe"
+                  value={payment.nameOnCard}
+                  onChange={(event) =>
+                    setPayment((current) => ({
+                      ...current,
+                      nameOnCard: event.target.value,
+                    }))
+                  }
+                />
+              </label>
 
-                  const maximum =
-                    getMaximumQuantity(ticket);
+              {/* These three inputs are wireframe placeholders. In production,
+                  replace them with your payment provider's hosted fields. */}
+              <label>
+                Card number *
+                <input
+                  inputMode="numeric"
+                  autoComplete="cc-number"
+                  placeholder="1234 5678 9012 3456"
+                  value={payment.cardNumber}
+                  onChange={(event) =>
+                    setPayment((current) => ({
+                      ...current,
+                      cardNumber: digitsOnly(event.target.value).slice(0, 19),
+                    }))
+                  }
+                />
+              </label>
 
-                  const selectable =
-                    ticketCanBeSelected(ticket);
-
-                  return (
-                    <article
-                      className={`public-ticket-selection-card${
-                        selectable
-                          ? ""
-                          : " public-ticket-selection-card--disabled"
-                      }`}
-                      key={ticket.ticket_id}
-                    >
-                      <div className="public-ticket-selection-card__main">
-                        <div className="public-ticket-selection-card__heading">
-                          <div>
-                            <h3>
-                              {ticket.ticket_name}
-                            </h3>
-
-                            <span>
-                              {getTicketStatus(
-                                ticket,
-                              )}
-                            </span>
-                          </div>
-
-                          <strong>
-                            {formatCurrency(
-                              ticket.ticket_price,
-                            )}
-                          </strong>
-                        </div>
-
-                        {ticket.ticket_description && (
-                          <p className="public-ticket-selection-card__description">
-                            {
-                              ticket.ticket_description
-                            }
-                          </p>
-                        )}
-
-                        <div className="public-ticket-selection-card__limits">
-                          <span>
-                            Minimum{" "}
-                            {ticket.min_per_order}
-                          </span>
-
-                          <span>
-                            Maximum {maximum}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="public-ticket-quantity">
-                        <button
-                          type="button"
-                          aria-label={`Remove one ${ticket.ticket_name} ticket`}
-                          disabled={
-                            !selectable ||
-                            quantity === 0
-                          }
-                          onClick={() =>
-                            decrementTicket(ticket)
-                          }
-                        >
-                          <Minus
-                            size={17}
-                            aria-hidden="true"
-                          />
-                        </button>
-
-                        <output
-                          aria-label={`${ticket.ticket_name} quantity`}
-                        >
-                          {quantity}
-                        </output>
-
-                        <button
-                          type="button"
-                          aria-label={`Add one ${ticket.ticket_name} ticket`}
-                          disabled={
-                            !selectable ||
-                            quantity >= maximum
-                          }
-                          onClick={() =>
-                            incrementTicket(ticket)
-                          }
-                        >
-                          <Plus
-                            size={17}
-                            aria-hidden="true"
-                          />
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })}
+              <div className="ticket-checkout-form__row">
+                <label>
+                  Expiry *
+                  <input
+                    autoComplete="cc-exp"
+                    placeholder="MM/YY"
+                    value={payment.expiry}
+                    onChange={(event) =>
+                      setPayment((current) => ({
+                        ...current,
+                        expiry: event.target.value.slice(0, 5),
+                      }))
+                    }
+                  />
+                </label>
+                <label>
+                  CVV *
+                  <input
+                    inputMode="numeric"
+                    autoComplete="cc-csc"
+                    placeholder="123"
+                    value={payment.cvv}
+                    onChange={(event) =>
+                      setPayment((current) => ({
+                        ...current,
+                        cvv: digitsOnly(event.target.value).slice(0, 4),
+                      }))
+                    }
+                  />
+                </label>
               </div>
-            )}
 
-          {selectionError && (
-            <div
-              className="public-ticket-selection-message"
-              role="status"
-            >
-              <AlertCircle
-                size={18}
-                aria-hidden="true"
-              />
+              <OrderSummary quote={quote} />
+            </div>
+          )}
 
-              <span>{selectionError}</span>
+          {step === 4 && confirmation && (
+            <div className="ticket-checkout-confirmation">
+              <div className="ticket-checkout-confirmation__icon">
+                <CircleCheck size={38} />
+              </div>
+              <h3>Order confirmed!</h3>
+              <p>
+                Thank you, <strong>{confirmation.customer.first_name}</strong>.
+              </p>
+              <p>
+                A confirmation has been sent to{" "}
+                <strong>{confirmation.customer.email}</strong>
+              </p>
+
+              <div className="ticket-checkout-confirmation__card">
+                <div className="ticket-checkout-confirmation__reference">
+                  <span>ORDER REFERENCE</span>
+                  <strong>{confirmation.order_reference}</strong>
+                </div>
+
+                {confirmation.items.map((item) => (
+                  <div className="ticket-checkout-confirmation__line" key={item.ticket_id}>
+                    <span>
+                      <strong>{item.ticket_name}</strong>
+                      <small>× {item.quantity} ticket{item.quantity === 1 ? "" : "s"}</small>
+                    </span>
+                    <strong>{formatCurrency(item.line_total)}</strong>
+                  </div>
+                ))}
+
+                <div className="ticket-checkout-confirmation__total">
+                  <strong>Total paid</strong>
+                  <strong>{formatCurrency(confirmation.total_paid)}</strong>
+                </div>
+              </div>
             </div>
           )}
         </div>
 
-        {ticketsQuery.isSuccess &&
-          tickets.length > 0 && (
-            <footer className="public-ticket-modal__footer">
-              <div>
-                <span>
-                  {selectedQuantity}{" "}
-                  {selectedQuantity === 1
-                    ? "ticket"
-                    : "tickets"}
-                </span>
+        <footer className="ticket-checkout__footer">
+          {step === 1 && (
+            <button
+              type="button"
+              className="ticket-checkout__primary"
+              disabled={selectedQuantity === 0 || quoteMutation.isPending}
+              onClick={() => void continueFromTickets()}
+            >
+              {quoteMutation.isPending ? (
+                <><LoaderCircle className="ticket-checkout__spinner" /> Checking availability</>
+              ) : selectedQuantity === 0 ? (
+                <>Select at least one ticket <ArrowRight size={19} /></>
+              ) : (
+                <>Continue · {formatCurrency(localTotal)} <ArrowRight size={19} /></>
+              )}
+            </button>
+          )}
 
-                <strong>
-                  {formatCurrency(selectedTotal)}
-                </strong>
-              </div>
-
+          {(step === 2 || step === 3) && (
+            <>
+              <button type="button" className="ticket-checkout__back" onClick={goBack}>
+                <ArrowLeft size={17} /> Back
+              </button>
               <button
                 type="button"
-                className="public-ticket-modal__continue"
-                disabled={
-                  selectedQuantity === 0 ||
-                  availabilityMutation.isPending
-                }
+                className="ticket-checkout__primary"
+                disabled={orderMutation.isPending}
                 onClick={() => {
-                  void handleContinue();
+                  if (step === 2) continueFromDetails();
+                  else void pay();
                 }}
               >
-                {availabilityMutation.isPending ? (
-                  <>
-                    <LoaderCircle
-                      className="public-ticket-modal-spinner"
-                      size={19}
-                      aria-hidden="true"
-                    />
-                    Checking
-                  </>
+                {step === 2 ? (
+                  <>Continue to Payment <ArrowRight size={19} /></>
+                ) : orderMutation.isPending ? (
+                  <><LoaderCircle className="ticket-checkout__spinner" /> Processing payment</>
                 ) : (
-                  <>
-                    <Ticket
-                      size={19}
-                      aria-hidden="true"
-                    />
-                    Continue
-                  </>
+                  <>Pay {formatCurrency(displayTotal)} <ArrowRight size={19} /></>
                 )}
               </button>
-            </footer>
+            </>
           )}
+
+          {step === 4 && (
+            <button type="button" className="ticket-checkout__primary" onClick={onClose}>
+              Done
+            </button>
+          )}
+        </footer>
       </section>
     </div>
+  );
+}
+
+function OrderSummary({ quote }: { quote: PublicCheckoutQuote }) {
+  return (
+    <section className="ticket-checkout-summary">
+      <h3>Order summary</h3>
+      {quote.items.map((item) => (
+        <div key={item.ticket_id}>
+          <span>{item.ticket_name} × {item.quantity}</span>
+          <strong>{formatCurrency(item.line_total)}</strong>
+        </div>
+      ))}
+      {quote.fees > 0 && (
+        <div>
+          <span>Fees</span>
+          <strong>{formatCurrency(quote.fees)}</strong>
+        </div>
+      )}
+      <div className="ticket-checkout-summary__total">
+        <span>Total</span>
+        <strong>{formatCurrency(quote.total)}</strong>
+      </div>
+    </section>
   );
 }
