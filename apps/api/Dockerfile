@@ -82,4 +82,4 @@ USER node
 
 EXPOSE 3000
 
-CMD ["./docker/render-startup.sh"]
+CMD ["./docker/startup.sh"]
