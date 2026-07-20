@@ -42,7 +42,14 @@ import type {
   UpdateAttendeeBody,
   UpdateOrderStatusBody,
   PaymentProviderParams,
+  CheckinIdParams,
+  EventIdParams
 } from "../../types/commerceTypes.js";
+
+import {
+  createCheckinSchema,
+  deleteCheckinSchema,
+} from "../../schemas/commerceSchemas.js";
 
 const canViewOrders = authorizeAny([
   "orders.view",
@@ -365,7 +372,7 @@ export default async function commerceRoutes(
   );
 
   app.post<{
-    Params: IdParams;
+    Params: EventIdParams;
     Body: CreateCheckinBody;
   }>(
     "/api/events/:eventId/checkins",
@@ -374,12 +381,13 @@ export default async function commerceRoutes(
         authenticate,
         canCheckInAttendees,
       ],
+      schema: createCheckinSchema,
     },
     controllers.createCheckin,
   );
 
   app.delete<{
-    Params: IdParams;
+    Params: CheckinIdParams;
   }>(
     "/api/events/:eventId/checkins/:checkinId",
     {
@@ -387,6 +395,7 @@ export default async function commerceRoutes(
         authenticate,
         canCheckInAttendees,
       ],
+      schema: deleteCheckinSchema,
     },
     controllers.deleteCheckin,
   );

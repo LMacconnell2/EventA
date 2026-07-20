@@ -17,13 +17,11 @@ export type EventAttendeeListQuery = {
   order?: string;
 };
 
-export type EventAttendee = {
+export interface EventAttendee {
   attendee_id: number;
   event_id: number;
-
   ticket_id: number;
   ticket_name: string;
-
   order_item_id: number;
   order_id: number;
 
@@ -34,19 +32,24 @@ export type EventAttendee = {
   attendee_fname: string;
   attendee_lname: string;
   attendee_name: string;
+
   email: string;
+
+  ticket_code: string;
+
+  active_checkin_id: number | null;
 
   checked_in: boolean;
   checkin_time: string | null;
 
-  buyer_name: string | null;
-  buyer_email: string | null;
+  buyer_name: string;
+  buyer_email: string;
   purchase_date: string;
 
   notes: string | null;
   created_at: string;
   updated_at: string;
-};
+}
 
 export type EventAttendeeSummary = {
   total_registered: number;

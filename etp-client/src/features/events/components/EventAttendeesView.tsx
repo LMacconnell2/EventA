@@ -1,9 +1,17 @@
 import {
+  Check,
   ChevronLeft,
   ChevronRight,
+  LogOut,
+  QrCode,
+  ScanLine,
   Search,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   useEffect,
   useMemo,
@@ -11,11 +19,17 @@ import {
 } from "react";
 
 import {
+  checkInAttendee,
+  checkInAttendeeByTicketCode,
+  checkOutAttendee,
   getAttendeeStatuses,
   getEventAttendees,
   type AttendeeStatusLookup,
   type EventAttendee,
 } from "../api/eventAttendeeApi";
+
+import { AttendeeCheckInScanner } from "./AttendeeCheckinScanner";
+import { AttendeeQrCodeModal } from "./AttendeeQrCodeModal";
 
 type EventAttendeesViewProps = {
   eventId: number;
@@ -90,6 +104,17 @@ export function EventAttendeesView({
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
+  const queryClient = useQueryClient();
+
+  const [selectedQrAttendee, setSelectedQrAttendee] =
+    useState<EventAttendee | null>(null);
+
+  const [showCheckInScanner, setShowCheckInScanner] =
+    useState(false);
+
+  const [actionError, setActionError] =
+    useState<string | null>(null);
+
   const debouncedSearch = useDebouncedValue(
     search,
     350,
@@ -131,6 +156,83 @@ export function EventAttendeesView({
     queryKey: ["attendee-statuses"],
     queryFn: getAttendeeStatuses,
   });
+
+  const checkInMutation = useMutation({
+    mutationFn: (attendeeId: number) =>
+      checkInAttendee(eventId, attendeeId),
+
+    onMutate: () => {
+      setActionError(null);
+    },
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: [
+          "event-attendees",
+          eventId,
+        ],
+      });
+    },
+
+    onError: (error: unknown) => {
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "The attendee could not be checked in.",
+      );
+    },
+  });
+
+  const checkOutMutation = useMutation({
+    mutationFn: (checkinId: number) =>
+      checkOutAttendee(eventId, checkinId),
+
+    onMutate: () => {
+      setActionError(null);
+    },
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: [
+          "event-attendees",
+          eventId,
+        ],
+      });
+    },
+
+    onError: (error: unknown) => {
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "The attendee could not be checked out.",
+      );
+    },
+  });
+
+  const scanCheckInMutation = useMutation({
+    mutationFn: (ticketCode: string) =>
+      checkInAttendeeByTicketCode(
+        eventId,
+        ticketCode,
+      ),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["event-attendees", eventId],
+      });
+    },
+  });
+
+  async function handleScannedTicket(
+    ticketCode: string,
+  ): Promise<EventAttendee> {
+    const response =
+      await scanCheckInMutation.mutateAsync(
+        ticketCode,
+      );
+
+    return response.attendee;
+  }
 
   const attendees =
     attendeeQuery.data?.data ?? [];
@@ -211,6 +313,19 @@ export function EventAttendeesView({
     );
   }
 
+  if (showCheckInScanner) {
+    return (
+      <AttendeeCheckInScanner
+        eventId={eventId}
+        checkedInCount={summary.checked_in}
+        onBack={() =>
+          setShowCheckInScanner(false)
+        }
+        onTicketCode={handleScannedTicket}
+      />
+    );
+  }
+
   return (
     <section className="event-static-view">
       <div className="event-attendee-summary">
@@ -245,6 +360,19 @@ export function EventAttendeesView({
             {summary.checked_in.toLocaleString()}
           </strong>
         </div>
+      </div>
+
+      <div className="event-attendee-checkin-launch">
+        <button
+          type="button"
+          className="event-primary-action"
+          onClick={() =>
+            setShowCheckInScanner(true)
+          }
+        >
+          <ScanLine size={19} />
+          Check-in Attendees
+        </button>
       </div>
 
       <div className="event-attendee-toolbar">
@@ -302,6 +430,7 @@ export function EventAttendeesView({
                   <th scope="col">
                     Check-in
                   </th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
 
@@ -391,6 +520,71 @@ export function EventAttendeesView({
                           </span>
                         )}
                       </td>
+                      <td>
+                        <div className="event-attendee-actions">
+                          <button
+                            type="button"
+                            className="event-attendee-action-button"
+                            title="Generate QR code"
+                            aria-label={`Generate QR code for ${attendee.attendee_name}`}
+                            onClick={() =>
+                              setSelectedQrAttendee(attendee)
+                            }
+                          >
+                            <QrCode size={17} />
+                            QR Code
+                          </button>
+
+                          {!attendee.checked_in ? (
+                            <button
+                              type="button"
+                              className="event-attendee-action-button event-attendee-action-button--checkin"
+                              disabled={checkInMutation.isPending}
+                              onClick={() =>
+                                checkInMutation.mutate(
+                                  attendee.attendee_id,
+                                )
+                              }
+                            >
+                              <Check size={17} />
+                              Check In
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="event-attendee-action-button event-attendee-action-button--checkout"
+                              disabled={
+                                checkOutMutation.isPending ||
+                                typeof attendee.active_checkin_id !==
+                                  "number"
+                              }
+                              title={
+                                typeof attendee.active_checkin_id !==
+                                "number"
+                                  ? "No active check-in record was returned."
+                                  : "Reverse this attendee's check-in."
+                              }
+                              onClick={() => {
+                                const checkinId =
+                                  attendee.active_checkin_id;
+
+                                if (typeof checkinId !== "number") {
+                                  setActionError(
+                                    "This attendee is marked as checked in, but the API did not return an active check-in ID.",
+                                  );
+
+                                  return;
+                                }
+
+                                checkOutMutation.mutate(checkinId);
+                              }}
+                            >
+                              <LogOut size={17} />
+                              Check Out
+                            </button>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -451,6 +645,21 @@ export function EventAttendeesView({
           </div>
         </>
       )}
+      {actionError && (
+        <div
+          className="event-attendee-action-error"
+          role="alert"
+        >
+          {actionError}
+        </div>
+      )}
+
+      <AttendeeQrCodeModal
+        attendee={selectedQrAttendee}
+        onClose={() =>
+          setSelectedQrAttendee(null)
+        }
+      />
     </section>
   );
 }

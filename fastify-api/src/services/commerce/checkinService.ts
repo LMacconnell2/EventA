@@ -137,7 +137,29 @@ export class CheckinService {
     try {
       await client.query("BEGIN");
 
-      const attendeeResult = await client.query(
+      const attendeeId =
+        "attendee_id" in body
+          ? body.attendee_id
+          : null;
+
+      const ticketCode =
+        "ticket_code" in body
+          ? body.ticket_code?.trim()
+          : null;
+
+      if (!attendeeId && !ticketCode) {
+        throw new CommerceError(
+          400,
+          "Either attendee_id or ticket_code is required.",
+          "CHECKIN_IDENTIFIER_REQUIRED",
+        );
+      }
+
+      const attendeeResult = await client.query<{
+        attendee_id: number;
+        checked_in: boolean;
+        event_id: number;
+      }>(
         `
           SELECT
             a.attendee_id,
@@ -148,16 +170,28 @@ export class CheckinService {
             ON oi.order_item_id = a.order_item_id
           JOIN tickets t
             ON t.ticket_id = oi.ticket_id
-          WHERE a.attendee_id = $1
-            AND a.deleted_at IS NULL
+          WHERE a.deleted_at IS NULL
+            AND t.event_id = $1
+            AND (
+              ($2::integer IS NOT NULL
+                AND a.attendee_id = $2)
+              OR
+              ($3::text IS NOT NULL
+                AND a.ticket_code = $3)
+            )
+          LIMIT 1
           FOR UPDATE OF a
         `,
-        [body.attendee_id],
+        [
+          eventId,
+          attendeeId,
+          ticketCode,
+        ],
       );
 
       const attendee = attendeeResult.rows[0];
 
-      if (!attendee || attendee.event_id !== eventId) {
+      if (!attendee) {
         throw new CommerceError(
           404,
           "Attendee was not found for this event.",
@@ -173,17 +207,20 @@ export class CheckinService {
         );
       }
 
-      const checkedInStatus = await client.query(
-        `
-          SELECT attendee_status_id
-          FROM attendee_status
-          WHERE UPPER(attendee_status_name) =
-            'CHECKED IN'
-            AND active = TRUE
-            AND deleted_at IS NULL
-          LIMIT 1
-        `,
-      );
+      const checkedInStatus =
+        await client.query<{
+          attendee_status_id: number;
+        }>(
+          `
+            SELECT attendee_status_id
+            FROM attendee_status
+            WHERE UPPER(attendee_status_name) =
+              'CHECKED IN'
+              AND active = TRUE
+              AND deleted_at IS NULL
+            LIMIT 1
+          `,
+        );
 
       const checkin = await client.query(
         `
@@ -197,11 +234,20 @@ export class CheckinService {
             created_by,
             updated_by
           )
-          VALUES ($1, $2, NOW(), $3, $4, $5, $2, $2)
+          VALUES (
+            $1,
+            $2,
+            NOW(),
+            $3,
+            $4,
+            $5,
+            $2,
+            $2
+          )
           RETURNING *
         `,
         [
-          body.attendee_id,
+          attendee.attendee_id,
           actorUserId,
           body.location ?? null,
           body.device ?? null,
@@ -224,7 +270,7 @@ export class CheckinService {
           WHERE attendee_id = $1
         `,
         [
-          body.attendee_id,
+          attendee.attendee_id,
           checkedInStatus.rows[0]
             ?.attendee_status_id ?? null,
           actorUserId,
@@ -232,6 +278,7 @@ export class CheckinService {
       );
 
       await client.query("COMMIT");
+
       return checkin.rows[0];
     } catch (error) {
       await client.query("ROLLBACK");
