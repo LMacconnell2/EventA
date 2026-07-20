@@ -1,6 +1,6 @@
 import type {
   Pool,
-  PoolClient,
+  // PoolClient,
 } from "pg";
 import type {
   OrderListQuery,

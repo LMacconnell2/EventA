@@ -1,4 +1,4 @@
-import type { Pool, PoolClient, QueryResultRow } from "pg";
+import type { Pool, PoolClient } from "pg";
 import type {
   CreateVenueBody,
   DistanceUnit,
@@ -238,7 +238,7 @@ export class VenueService {
       LIMIT ${limitParam} OFFSET ${offsetParam};
     `;
 
-    const rows = (await this.db.query(dataSql, values)).rows.map(({ distance_value, ...row }) => row);
+    const rows = (await this.db.query(dataSql, values)).rows.map(({ distance_value: _distanceValue, ...row }) => row);
     return {
       data: rows,
       pagination: {

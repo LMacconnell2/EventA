@@ -1,4 +1,4 @@
-import type { Pool, PoolClient } from "pg";
+import type { PoolClient } from "pg";
 import { db } from "../../database/db.js";
 import type {
   AdminUserPatchBody,
@@ -14,7 +14,7 @@ import {
 import { betterAuthUserService } from "./better-auth-userService.js";
 import { profilePhotoService } from "./profilePhotoService.js";
 
-type Queryable = Pick<Pool, "query"> | Pick<PoolClient, "query">;
+// type Queryable = Pick<Pool, "query"> | Pick<PoolClient, "query">;
 
 interface UserIdentityRow {
   user_id: number;

@@ -17,7 +17,7 @@ try {
     execSync("pnpm db:seed-user", { stdio: "inherit" });
 
     console.log("Database rebuilt successfully.");
-} catch (error) {
+} catch (_error) {
     console.error("Database rebuild failed.");
     process.exit(1);
 }

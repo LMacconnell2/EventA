@@ -3,7 +3,7 @@ import { authenticate } from "../../auth/authenticate.js";
 import { authorizeAny } from "../../auth/authorize.js";
 import { eventController } from "../../controllers/eventController.js";
 import {
-  attachSponsorBodySchema,
+  // attachSponsorBodySchema,
   createAssignmentBodySchema,
   createEventBodySchema,
   createImageBodySchema,
@@ -11,7 +11,7 @@ import {
   eventIdParamsSchema,
   eventImageParamsSchema,
   eventListQuerySchema,
-  eventSponsorParamsSchema,
+  // eventSponsorParamsSchema,
   replaceCategoriesBodySchema,
   replaceTagsBodySchema,
   updateAssignmentBodySchema,

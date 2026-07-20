@@ -406,7 +406,8 @@ export class RoleService {
         try {
             await client.query("BEGIN");
 
-            const role = await this.lockRole(client, roleId);
+            // const role = 
+            await this.lockRole(client, roleId);
             const assignedUsers = await this.getAssignedUsers(
                 client,
                 roleId,

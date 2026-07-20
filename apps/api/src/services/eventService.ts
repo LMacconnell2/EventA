@@ -1,4 +1,4 @@
-import type { PoolClient, QueryResultRow } from "pg";
+import type { PoolClient } from "pg";
 import { db } from "../database/db.js";
 import type {
   AttachSponsorBody,

@@ -4,26 +4,26 @@
   "private": true,
   "packageManager": "pnpm@10.12.3",
   "engines": {
-    "node": ">=24"
+    "node": ">=24.18.0",
+    "pnpm": ">=10.12.3"
   },
-  "scripts": {
-    "dev": "pnpm --parallel --filter fastify-api --filter etp-client dev",
-    "dev:api": "pnpm --filter fastify-api dev",
-    "dev:client": "pnpm --filter etp-client dev",
+"scripts": {
+    "dev": "pnpm --parallel --filter @eventa/api --filter @eventa/client dev",
 
-    "build": "pnpm -r build",
-    "build:api": "pnpm --filter fastify-api build",
-    "build:client": "pnpm --filter etp-client build",
+    "build": "pnpm --filter @eventa/api build && pnpm --filter @eventa/client build",
+    "build:api": "pnpm --filter @eventa/api build",
+    "build:client": "pnpm --filter @eventa/client build",
 
-    "lint": "pnpm -r --if-present lint",
-    "typecheck": "pnpm -r --if-present typecheck",
-    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm --filter @eventa/api typecheck && pnpm --filter @eventa/client typecheck",
+    "typecheck:api": "pnpm --filter @eventa/api typecheck",
+    "typecheck:client": "pnpm --filter @eventa/client typecheck",
 
-    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "lint": "pnpm --recursive --if-present lint",
+    "test": "pnpm --recursive --if-present test",
 
-    "db:setup": "pnpm --filter fastify-api db:setup",
-    "db:seed": "pnpm --filter fastify-api db:seed",
-    "db:reset": "pnpm --filter fastify-api db:reset",
-    "db:rebuild": "pnpm --filter fastify-api db:rebuild"
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "ci": "pnpm verify",
+
+    "clean": "pnpm --recursive --if-present clean"
   }
 }

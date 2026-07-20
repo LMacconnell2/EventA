@@ -1,0 +1,52 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Existing build output
+dist
+**/dist
+build
+**/build
+coverage
+**/coverage
+
+# Git
+.git
+.gitignore
+.github
+
+# Environment and secrets
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor files
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Docker configuration does not need to be copied
+compose*.yaml
+compose*.yml
+docker-compose*.yaml
+docker-compose*.yml
+**/Dockerfile*
+
+# Testing output
+playwright-report
+test-results
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Documentation and miscellaneous
+README.md
+docs

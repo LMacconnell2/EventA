@@ -19,6 +19,27 @@ import {
   roundMoney,
 } from "../../lib/commerce.js";
 
+interface ConfirmationOrder {
+  order_id: number;
+  order_reference: string;
+
+  event_title: string;
+
+  payment_status: string;
+  currency: string;
+
+  buyer_name: string | null;
+  buyer_email: string;
+  buyer_phone: string | null;
+
+  subtotal_amount: string | number;
+  discount_amount: string | number;
+  fee_amount: string | number;
+  total_amount: string | number;
+
+  created_at: Date;
+}
+
 type TicketRow = {
   ticket_id: number;
   event_id: number;
@@ -1102,7 +1123,7 @@ export class PublicCheckoutService {
 
   private async buildConfirmation(
     orderId: number,
-    order: Record<string, any>,
+    order: ConfirmationOrder,
     confirmationToken?: string,
   ) {
     const items = await this.pool.query(

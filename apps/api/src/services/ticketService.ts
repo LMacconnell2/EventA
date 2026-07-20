@@ -1,4 +1,4 @@
-import type { Pool, PoolClient, QueryResultRow } from "pg";
+import type { Pool, PoolClient } from "pg";
 import type {
   CreateTicketBody,
   PublicTicketListQuery,
