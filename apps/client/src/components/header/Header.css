@@ -30,6 +30,7 @@
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.03em;
+  max-width: 210px;
 }
 
 .app-header__nav {

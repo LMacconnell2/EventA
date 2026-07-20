@@ -1,6 +1,7 @@
 :root {
   /* Typography */
   --font-family-base:
+    "Montserrat",
     Inter,
     ui-sans-serif,
     system-ui,
@@ -9,41 +10,50 @@
     "Segoe UI",
     sans-serif;
 
-  --sidebar-width: 280px;
+  --font-family-heading:
+    "Montserrat",
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
 
   /* Brand */
-  --color-primary: #1f5eff;
-  --color-primary-hover: #174bd1;
-  --color-primary-soft: #eaf2ff;
+  --color-primary: #d4142f;
+  --color-primary-hover: #ae0d26;
+  --color-primary-soft: #fce8ec;
+
+  --color-brand-dark: #151519;
+  --color-brand-gray: #4a4a4f;
+  --color-brand-gray-light: #74747a;
 
   /* Backgrounds */
-  --color-background: #f8fafc;
+  --color-background: #f7f7f8;
   --color-surface: #ffffff;
-  --color-surface-muted: #f8fafc;
-  --color-surface-hover: #f9fafb;
+  --color-surface-muted: #f2f2f3;
+  --color-surface-hover: #ececee;
 
   /* Text */
-  --color-text: #0f2342;
-  --color-text-heading: #071a36;
-  --color-text-muted: #52627a;
-  --color-text-subtle: #64748b;
+  --color-text: #2d2d31;
+  --color-text-heading: #151519;
+  --color-text-muted: #5f5f65;
+  --color-text-subtle: #78787f;
 
   /* Borders */
-  --color-border: #dbe1e8;
-  --color-border-strong: #cbd5e1;
+  --color-border: #dddddf;
+  --color-border-strong: #c6c6ca;
 
   /* Status */
-  --color-success-background: #d7f9e4;
-  --color-success-text: #007a36;
+  --color-success-background: #def4e5;
+  --color-success-text: #176b3a;
 
-  --color-neutral-background: #f1f3f6;
-  --color-neutral-text: #1f2937;
+  --color-neutral-background: #ececee;
+  --color-neutral-text: #35353a;
 
-  --color-warning-background: #fef3c7;
-  --color-warning-text: #92400e;
+  --color-warning-background: #fff0cc;
+  --color-warning-text: #815500;
 
-  --color-danger-background: #fee2e2;
-  --color-danger-text: #b91c1c;
+  --color-danger-background: #fce8ec;
+  --color-danger-text: #ae0d26;
 
   /* Sizing */
   --sidebar-width: 316px;
@@ -68,8 +78,12 @@
 
   /* Shadows */
   --shadow-sm:
-    0 1px 2px rgb(15 23 42 / 0.03),
-    0 1px 3px rgb(15 23 42 / 0.04);
+    0 1px 2px rgb(21 21 25 / 0.04),
+    0 1px 3px rgb(21 21 25 / 0.06);
+
+  --shadow-md:
+    0 8px 24px rgb(21 21 25 / 0.1),
+    0 2px 8px rgb(21 21 25 / 0.06);
 
   /* Transitions */
   --transition-fast: 150ms ease;

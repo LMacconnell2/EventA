@@ -101,7 +101,11 @@ export function Header({
             exact: true,
           }}
         >
-          EventPro
+          <img
+            src="/eventa-logo-light-lg.webp"
+            alt="EventA"
+            className="app-header__brand-image"
+          />
         </Link>
 
         <nav
@@ -133,16 +137,18 @@ export function Header({
             Events
           </Link>
 
-          <Link
-            to="/dashboard"
-            className="app-header__link"
-            activeProps={{
-              className:
-                "app-header__link app-header__link--active",
-            }}
-          >
-            Dashboard
-          </Link>
+          {user && (
+            <Link
+              to="/dashboard"
+              className="app-header__link"
+              activeProps={{
+                className:
+                  "app-header__link app-header__link--active",
+              }}
+            >
+              Dashboard
+            </Link>
+          )}
         </nav>
 
         <div className="app-header__account">
