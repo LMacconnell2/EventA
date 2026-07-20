@@ -4,6 +4,22 @@ import "dotenv/config";
 import { db } from "../database/db";
 import { admin } from "better-auth/plugins";
 
+const CLIENT_URL = process.env.CLIENT_URL
+const API_URL = process.env.API_URL
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!CLIENT_URL) {
+  throw new Error("CLIENT_URL is not defined.");
+}
+
+if (!API_URL) {
+  throw new Error("API_URL is not defined.");
+}
+
+if (!DATABASE_URL) {
+  throw new Error("DATABASE_URL is not defined.");
+}
+
 function extractFirstName(name?: string | null): string {
   const parts = name?.trim().split(/\s+/) ?? [];
 
@@ -36,8 +52,6 @@ function createUsername(
     .replace(/[^a-z0-9._-]/g, "");
 }
 
-const DATABASE_URL = process.env.DATABASE_URL;
-
 if (!DATABASE_URL) {
   throw new Error("DATABASE_URL is not defined.");
 }
@@ -65,8 +79,8 @@ export const auth = betterAuth({
   ],
 
   trustedOrigins: [
-    "http://localhost:5173",
-    "http://localhost:3000",
+    CLIENT_URL,
+    API_URL,
   ],
 
   databaseHooks: {

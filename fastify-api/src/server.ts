@@ -23,6 +23,7 @@ import attendeeRoutes from "./routes/attendeeRoutes/attendeeRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes/dashboardRoutes.js";
 import commerceRoutes from "./routes/commerceRoutes/commerceRoutes.js";
 
+const CLIENT_URL = process.env.CLIENT_URL
 const app = Fastify({
   logger: true,
 });
@@ -33,7 +34,7 @@ async function addDependencies() {
   await app.register(cookie);
 
   await app.register(cors, {
-    origin: "http://localhost:5173",
+    origin: CLIENT_URL,
     credentials: true,
       allowedHeaders: [
         "Content-Type",

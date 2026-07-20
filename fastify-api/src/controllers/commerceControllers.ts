@@ -17,6 +17,8 @@ import type {
   UpdateAttendeeBody,
   UpdateOrderStatusBody,
   PaymentProviderParams,
+  EventIdParams,
+  CheckinIdParams,
 } from "../types/commerceTypes.js";
 import {
   CommerceError,
@@ -443,7 +445,7 @@ export function createCommerceControllers(services: {
 
     createCheckin: async (
       request: FastifyRequest<{
-        Params: IdParams;
+        Params: EventIdParams;
         Body: CreateCheckinBody;
       }>,
       reply: FastifyReply,
@@ -458,15 +460,18 @@ export function createCommerceControllers(services: {
           );
         }
 
-        return reply.code(201).send({
-          data: await services.checkins.createCheckin(
+        const checkin =
+          await services.checkins.createCheckin(
             parsePositiveInteger(
               request.params.eventId,
               "eventId",
             ),
             request.body,
             actor,
-          ),
+          );
+
+        return reply.code(201).send({
+          data: checkin,
         });
       } catch (error) {
         return sendCommerceError(error, reply);
@@ -475,7 +480,7 @@ export function createCommerceControllers(services: {
 
     deleteCheckin: async (
       request: FastifyRequest<{
-        Params: IdParams;
+        Params: CheckinIdParams;
       }>,
       reply: FastifyReply,
     ) => {

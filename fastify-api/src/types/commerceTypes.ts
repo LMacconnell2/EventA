@@ -89,12 +89,21 @@ export type UpdateAttendeeBody = {
   notes?: string | null;
 };
 
-export type CreateCheckinBody = {
-  attendee_id: number;
-  location?: string;
-  device?: string;
-  notes?: string;
-};
+export type CreateCheckinBody =
+  | {
+      attendee_id: number;
+      ticket_code?: never;
+      location?: string;
+      device?: string;
+      notes?: string;
+    }
+  | {
+      attendee_id?: never;
+      ticket_code: string;
+      location?: string;
+      device?: string;
+      notes?: string;
+    };
 
 export type CheckoutItemInput = {
   ticket_id: number;
@@ -136,3 +145,12 @@ export type ConfirmationQuery = {
 export type PaymentProviderParams = {
   provider: string;
 };
+
+export interface EventIdParams {
+  eventId: string;
+}
+
+export interface CheckinIdParams {
+  eventId: string;
+  checkinId: string;
+}

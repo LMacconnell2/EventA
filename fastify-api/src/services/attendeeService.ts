@@ -225,6 +225,12 @@ export class AttendeeService {
               ) AS attendee_name,
 
               a.email,
+
+              a.ticket_code,
+
+              active_checkin.checkin_id
+                AS active_checkin_id,
+
               a.checked_in,
               a.checkin_time,
 
@@ -253,6 +259,20 @@ export class AttendeeService {
             INNER JOIN orders o
               ON o.order_id =
                 oi.order_id
+
+            LEFT JOIN LATERAL (
+              SELECT
+                ac.checkin_id
+              FROM attendee_checkins ac
+              WHERE ac.attendee_id =
+                a.attendee_id
+                AND ac.deleted_at IS NULL
+              ORDER BY
+                ac.checkin_time DESC,
+                ac.checkin_id DESC
+              LIMIT 1
+            ) active_checkin
+              ON TRUE
 
             WHERE ${whereSql}
 
