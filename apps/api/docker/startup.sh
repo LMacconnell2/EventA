@@ -1,8 +1,6 @@
 #!/bin/sh
 set -e
 
-cd /app
-
 echo "Running Better Auth migration..."
 node dist/database/migrations/runBetterAuthMigrations.js
 
