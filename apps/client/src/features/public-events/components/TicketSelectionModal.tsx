@@ -596,9 +596,23 @@ export function TicketSelectionModal({
                   isPending={orderMutation.isPending}
                   onBack={goBack}
                   onError={setFormError}
-                  onConfirmed={(response) => {
-                    setConfirmation(response);
-                    setStep(4);
+                  onConfirmed={async (paymentIntentId) => {
+                    await orderMutation.mutateAsync({
+                      eventId,
+                      body: {
+                        checkout_token: quote.checkout_token,
+
+                        customer: {
+                          first_name: customer.first_name.trim(),
+                          last_name: customer.last_name.trim(),
+                          email: customer.email.trim(),
+                          phone: customer.phone.trim() || null,
+                        },
+
+                        payment_provider: "stripe",
+                        payment_intent_id: paymentIntentId,
+                      },
+                    });
                   }}
                 />
               </Elements>
@@ -702,7 +716,9 @@ type StripePaymentFormProps = {
   isPending: boolean;
   onBack: () => void;
   onError: (message: string | null) => void;
-  onConfirmed: (paymentIntentId: string) => Promise<void>;
+  onConfirmed: (
+    paymentIntentId: string,
+  ) => Promise<void>;
 };
 
 function StripePaymentForm({
@@ -739,6 +755,10 @@ function StripePaymentForm({
             "Check your payment information and try again.",
         );
         return;
+      }
+
+      if (!quote.payment) {
+        return null;
       }
 
       const result = await stripe.confirmPayment({
@@ -847,6 +867,7 @@ function StripePaymentForm({
 }
 
 function OrderSummary({ quote }: { quote: PublicCheckoutQuote }) {
+  const fees = Number(quote.fees);
   return (
     <section className="ticket-checkout-summary">
       <h3>Order summary</h3>
@@ -856,7 +877,8 @@ function OrderSummary({ quote }: { quote: PublicCheckoutQuote }) {
           <strong>{formatCurrency(item.line_total)}</strong>
         </div>
       ))}
-      {quote.fees > 0 && (
+      
+      {fees > 0 && (
         <div>
           <span>Fees</span>
           <strong>{formatCurrency(quote.fees)}</strong>

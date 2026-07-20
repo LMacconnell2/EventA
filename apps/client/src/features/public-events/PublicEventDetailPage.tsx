@@ -23,7 +23,7 @@ import { TicketSelectionModal } from "./components/TicketSelectionModal";
 import type {
   PublicEventImage,
   PublicEventVenue,
-} from "./types/PublicEventDetailTypes";
+} from "./types/publicEventDetailTypes";
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {

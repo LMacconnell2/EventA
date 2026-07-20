@@ -70,7 +70,7 @@ export function EventEditor({
   initialForm,
   eventData,
   availableCategories,
-  availableTags,
+  // availableTags,
   venueOptions,
   visibilityOptions,
   organizerOptions,
@@ -368,8 +368,8 @@ useEffect(() => {
 
         {activeTab === "tags" && (
           <EventTagsView
-            assignedTags={eventData?.tags ?? []}
-            availableTags={availableTags}
+            // assignedTags={eventData?.tags ?? []}
+            // availableTags={availableTags}
             selectedIds={selectedTagIds}
             disabled={
               mode === "edit" &&

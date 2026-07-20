@@ -42,6 +42,7 @@ export function AttendeeQrCodeModal({
       return;
     }
 
+    const currentAttendee = attendee;
     let cancelled = false;
 
     async function generateQrCode() {
@@ -49,7 +50,7 @@ export function AttendeeQrCodeModal({
         setError(null);
 
         const dataUrl = await QRCode.toDataURL(
-          attendee.ticket_code,
+          currentAttendee.ticket_code,
           {
             width: 640,
             margin: 4,

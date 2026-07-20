@@ -3,7 +3,7 @@ import { Ticket } from "lucide-react";
 import type {
   PublicEventAttendanceSummary,
   PublicTicketSummary,
-} from "../types/PublicEventDetailTypes";
+} from "../types/publicEventDetailTypes";
 
 type PublicEventTicketPanelProps = {
   tickets: PublicTicketSummary[];

@@ -1,0 +1,29 @@
+{
+  "name": "eventa",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.12.3",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter fastify-api --filter etp-client dev",
+    "dev:api": "pnpm --filter fastify-api dev",
+    "dev:client": "pnpm --filter etp-client dev",
+
+    "build": "pnpm -r build",
+    "build:api": "pnpm --filter fastify-api build",
+    "build:client": "pnpm --filter etp-client build",
+
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+
+    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+
+    "db:setup": "pnpm --filter fastify-api db:setup",
+    "db:seed": "pnpm --filter fastify-api db:seed",
+    "db:reset": "pnpm --filter fastify-api db:reset",
+    "db:rebuild": "pnpm --filter fastify-api db:rebuild"
+  }
+}

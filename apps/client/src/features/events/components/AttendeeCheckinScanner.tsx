@@ -10,12 +10,12 @@ import {
   Html5QrcodeSupportedFormats,
 } from "html5-qrcode";
 import {
-  FormEvent,
   useEffect,
   useRef,
   useState,
   useCallback,
 } from "react";
+import type { FormEvent } from "react";
 
 import type { EventAttendee } from "../api/eventAttendeeApi";
 
@@ -135,17 +135,19 @@ export function AttendeeCheckInScanner({
           },
         );
 
-        if (disposed) {
-          await scanner
-            .stop()
-            .catch(() => undefined);
+      if (disposed) {
+        await scanner
+          .stop()
+          .catch(() => undefined);
 
-          await scanner
-            .clear()
-            .catch(() => undefined);
-
-          return;
+        try {
+          scanner.clear();
+        } catch {
+          // Ignore cleanup errors.
         }
+
+        return;
+      }
 
         started = true;
       } catch (error) {
@@ -163,22 +165,24 @@ export function AttendeeCheckInScanner({
 
     void startScanner();
 
-    return () => {
-      disposed = true;
+      return () => {
+        disposed = true;
 
-      void (async () => {
-        if (started) {
-          await scanner
-            .stop()
-            .catch(() => undefined);
-        }
+        void (async () => {
+          if (started) {
+            await scanner
+              .stop()
+              .catch(() => undefined);
+          }
 
-        await scanner
-          .clear()
-          .catch(() => undefined);
-      })();
-    };
-  }, []);
+          try {
+            scanner.clear();
+          } catch {
+            // Ignore cleanup errors.
+          }
+        })();
+      };
+  }, [processCode]);
 
   function handleManualSubmit(
     event: FormEvent<HTMLFormElement>,

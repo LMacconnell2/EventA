@@ -109,7 +109,11 @@ export function EventDetailPage() {
     );
   }
 
-  if (eventQuery.isPending || lookupsPending) {
+  if (
+    eventQuery.isPending ||
+    lookupsPending ||
+    !eventQuery.data
+  ) {
     return (
       <main className="event-detail-page">
         <div className="event-detail-state">

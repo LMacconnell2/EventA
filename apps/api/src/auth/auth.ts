@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { Pool } from "pg";
 import "dotenv/config";
-import { db } from "../database/db";
+import { db } from "../database/db.js";
 import { admin } from "better-auth/plugins";
 
 const CLIENT_URL = process.env.CLIENT_URL

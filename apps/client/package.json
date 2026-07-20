@@ -1,13 +1,19 @@
 {
-  "name": "etp-client",
+  "name": "@eventa/client",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "pnpm clean && tsc -b && vite build",
+    "typecheck": "tsc -b --noEmit",
+    "lint": "eslint . --max-warnings=0",
+    "test": "echo \"No client tests configured yet\"",
     "preview": "vite preview"
+  },
+  "engines": {
+    "node": ">=24"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^6.8.0",

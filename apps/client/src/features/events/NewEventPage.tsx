@@ -9,6 +9,7 @@ export function NewEventPage() {
     venueOptions,
     organizerOptions,
     categoryOptions,
+    visibilityOptions,
     isPending,
     error,
     refetch,
@@ -62,6 +63,7 @@ export function NewEventPage() {
         availableTags={[]}
         venueOptions={venueOptions}
         organizerOptions={organizerOptions}
+        visibilityOptions={visibilityOptions}
       />
     </main>
   );
