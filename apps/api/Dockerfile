@@ -82,4 +82,4 @@ USER node
 
 EXPOSE 3000
 
-CMD ["node", "dist/database/runBetterAuthMigrations.js"]
+CMD ["node", "dist/database/runBetterAuthMigrations.js && node dist/server.js"]
