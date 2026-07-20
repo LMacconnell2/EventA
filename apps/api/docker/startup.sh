@@ -13,4 +13,7 @@ echo "Seeding Database"
 node dist/database/seed.js
 node dist/database/seedUser.js
 
+echo "Starting API"
+exec node dist/server.js
+
 echo "Done."

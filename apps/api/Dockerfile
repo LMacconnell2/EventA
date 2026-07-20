@@ -82,4 +82,4 @@ USER node
 
 EXPOSE 3000
 
-CMD ["node", "dist/database/migrations/runBetterAuthMigrations.js && node dist/server.js"]
+CMD ["./docker/render-start.sh"]
