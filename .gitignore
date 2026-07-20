@@ -1,2 +1,38 @@
-/etp-client/.env
-/fastify-api/.env
+apps/client/.env
+app/api/.env
+node_modules
+.pnpm-store/
+
+# Build output
+dist/
+build/
+coverage/
+.vite/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor and operating system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+playwright-report/
+test-results/
+
+# Local uploads and temporary files
+tmp/
+temp/
+uploads/

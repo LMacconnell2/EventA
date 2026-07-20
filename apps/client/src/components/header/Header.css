@@ -1,0 +1,357 @@
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  width: 100%;
+
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-header__content {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto minmax(160px, 1fr);
+  align-items: center;
+
+  width: 100%;
+  max-width: 1440px;
+  min-height: 72px;
+
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.app-header__brand {
+  justify-self: start;
+
+  color: var(--color-text-heading);
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  max-width: 210px;
+}
+
+.app-header__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+}
+
+.app-header__link {
+  position: relative;
+
+  display: inline-flex;
+  align-items: center;
+
+  min-height: 72px;
+
+  color: var(--color-text-muted);
+  font-size: 0.98rem;
+  font-weight: 600;
+
+  transition: color var(--transition-fast);
+}
+
+.app-header__link::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+
+  height: 2px;
+
+  content: "";
+
+  background: var(--color-primary);
+
+  opacity: 0;
+  transform: scaleX(0);
+
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.app-header__link:hover {
+  color: var(--color-primary);
+}
+
+.app-header__link--active {
+  color: var(--color-primary);
+}
+
+.app-header__link--active::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.app-header__account {
+  position: relative;
+  justify-self: end;
+}
+
+.app-header__auth-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-header__login-link,
+.app-header__signup-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 42px;
+  padding: 0 17px;
+
+  font-size: 0.94rem;
+  font-weight: 650;
+  border-radius: var(--radius-md);
+
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.app-header__login-link {
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.app-header__login-link:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.app-header__signup-link {
+  color: #ffffff;
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.app-header__signup-link:hover {
+  color: #ffffff;
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+/* User menu */
+
+.app-user-menu {
+  position: relative;
+}
+
+.app-user-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  min-height: 46px;
+  padding: 4px 10px 4px 6px;
+
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+
+  cursor: pointer;
+
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.app-user-menu__trigger:hover,
+.app-user-menu__trigger[aria-expanded="true"] {
+  background: var(--color-surface-muted);
+  border-color: var(--color-border);
+}
+
+.app-user-menu__avatar,
+.app-user-menu__initials {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+
+  border-radius: 50%;
+}
+
+.app-user-menu__avatar {
+  object-fit: cover;
+}
+
+.app-user-menu__initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+
+  background: var(--color-primary-soft);
+}
+
+.app-user-menu__name {
+  max-width: 160px;
+
+  overflow: hidden;
+
+  font-size: 0.94rem;
+  font-weight: 650;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.app-user-menu__chevron {
+  transition: transform var(--transition-fast);
+}
+
+.app-user-menu__chevron--open {
+  transform: rotate(180deg);
+}
+
+.app-user-menu__dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 110;
+
+  width: 240px;
+  padding: 8px;
+
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 16px 30px rgb(15 23 42 / 0.12),
+    0 4px 10px rgb(15 23 42 / 0.06);
+}
+
+.app-user-menu__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  padding: 10px 12px;
+}
+
+.app-user-menu__identity strong {
+  overflow: hidden;
+
+  color: var(--color-text-heading);
+  font-size: 0.94rem;
+  font-weight: 650;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.app-user-menu__identity span {
+  overflow: hidden;
+
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.app-user-menu__divider {
+  height: 1px;
+  margin: 6px 0;
+
+  background: var(--color-border);
+}
+
+.app-user-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: left;
+
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+
+  cursor: pointer;
+
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.app-user-menu__item:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.app-user-menu__item--danger {
+  color: var(--color-danger-text);
+}
+
+.app-user-menu__item--danger:hover {
+  color: var(--color-danger-text);
+  background: var(--color-danger-background);
+}
+
+@media (max-width: 800px) {
+  .app-header__content {
+    grid-template-columns: auto 1fr auto;
+    padding: 0 20px;
+  }
+
+  .app-header__nav {
+    gap: 16px;
+  }
+
+  .app-user-menu__name {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-header__content {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0;
+
+    padding: 12px 16px;
+  }
+
+  .app-header__nav {
+    order: 3;
+
+    width: 100%;
+    margin-top: 8px;
+
+    border-top: 1px solid var(--color-border);
+  }
+
+  .app-header__link {
+    min-height: 48px;
+  }
+
+  .app-header__auth-actions {
+    gap: 4px;
+  }
+
+  .app-header__login-link,
+  .app-header__signup-link {
+    min-height: 38px;
+    padding: 0 11px;
+  }
+}

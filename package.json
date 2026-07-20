@@ -1,0 +1,29 @@
+{
+  "name": "eventa",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.12.3",
+  "engines": {
+    "node": ">=24.18.0",
+    "pnpm": ">=10.12.3"
+  },
+"scripts": {
+    "dev": "pnpm --parallel --filter @eventa/api --filter @eventa/client dev",
+
+    "build": "pnpm --filter @eventa/api build && pnpm --filter @eventa/client build",
+    "build:api": "pnpm --filter @eventa/api build",
+    "build:client": "pnpm --filter @eventa/client build",
+
+    "typecheck": "pnpm --filter @eventa/api typecheck && pnpm --filter @eventa/client typecheck",
+    "typecheck:api": "pnpm --filter @eventa/api typecheck",
+    "typecheck:client": "pnpm --filter @eventa/client typecheck",
+
+    "lint": "pnpm --recursive --if-present lint",
+    "test": "pnpm --recursive --if-present test",
+
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "ci": "pnpm verify",
+
+    "clean": "pnpm --recursive --if-present clean"
+  }
+}

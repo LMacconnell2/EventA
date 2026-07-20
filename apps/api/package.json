@@ -1,0 +1,54 @@
+{
+  "name": "@eventa/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "EventA Fastify API",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "pnpm clean && tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --max-warnings=0",
+    "test": "node --test",
+    
+    "db:setup": "tsx src/database/setup.ts",
+    "db:seed": "tsx src/database/seed.ts",
+    "db:seed-user": "tsx src/database/seedUser.ts",
+    "db:reset": "tsx src/database/reset.ts",
+    "db:rebuild": "tsx src/database/rebuild.ts",
+    "db:migrate": "tsx src/database/migrations/runMigrations.ts",
+    "db:migrate:status": "tsx src/database/migrations/migrationStatus.ts",
+
+    "db:setup:prod": "node dist/database/setup.js",
+    "db:seed:prod": "node dist/database/seed.js",
+    "db:seed-user:prod": "node dist/database/seedUser.js"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@10.12.3",
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^11.2.0",
+    "@fastify/multipart": "^10.1.0",
+    "@fastify/static": "^10.1.0",
+    "better-auth": "^1.6.23",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.8.5",
+    "fastify-raw-body": "^5.0.0",
+    "pg": "^8.21.0",
+    "stripe": "^22.3.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.9.1",
+    "@types/pg": "^8.20.0",
+    "eslint": "^10.7.0",
+    "globals": "^17.7.0",
+    "tsx": "^4.22.3",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.64.0"
+  }
+}
