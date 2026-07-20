@@ -23,7 +23,10 @@ import attendeeRoutes from "./routes/attendeeRoutes/attendeeRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes/dashboardRoutes.js";
 import commerceRoutes from "./routes/commerceRoutes/commerceRoutes.js";
 
-const CLIENT_URL = process.env.CLIENT_URL
+const CLIENT_URL = process.env.CLIENT_URL;
+const port = Number(process.env.PORT ?? 3000);
+const host = process.env.HOST ?? "0.0.0.0";
+
 const app = Fastify({
   logger: true,
 });
@@ -171,11 +174,11 @@ const start = async () => {
     await testDatabaseConnection();
 
     await app.listen({
-      port: 3000,
-      host: "0.0.0.0",
+      port,
+      host,
     });
 
-    console.log("Server running on port 3000");
+    console.log("Server running");
   } catch (err) {
     app.log.error(err);
     process.exit(1);
