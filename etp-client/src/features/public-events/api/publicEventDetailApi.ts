@@ -1,11 +1,11 @@
 import type {
-  PublicEventDetailResponse,
-  PublicEventTicketsResponse,
-  PublicTicketAvailability,
-    CreatePublicCheckoutRequest,
+  CreatePublicCheckoutRequest,
   CreatePublicOrderRequest,
   PublicCheckoutQuote,
+  PublicEventDetailResponse,
+  PublicEventTicketsResponse,
   PublicOrderConfirmation,
+  PublicTicketAvailability,
 } from "../types/publicEventDetailTypes";
 
 const API_URL =
@@ -52,6 +52,7 @@ async function postJson<TResponse, TBody>(
   url: string,
   body: TBody,
   signal?: AbortSignal,
+  additionalHeaders?: Record<string, string>,
 ): Promise<TResponse> {
   const response = await fetch(url, {
     method: "POST",
@@ -60,6 +61,7 @@ async function postJson<TResponse, TBody>(
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
+      ...additionalHeaders,
     },
     body: JSON.stringify(body),
   });
@@ -140,6 +142,10 @@ export async function getPublicTicketAvailability(
   return parseResponse<PublicTicketAvailability>(response);
 }
 
+/**
+ * Creates the server-side checkout and Stripe PaymentIntent.
+ * The response must include payment.client_secret for Stripe Elements.
+ */
 export async function createPublicEventCheckout({
   eventId,
   body,
@@ -156,19 +162,34 @@ export async function createPublicEventCheckout({
   );
 }
 
+/**
+ * Finalizes the application order after Stripe confirms the PaymentIntent.
+ */
 export async function createPublicEventOrder({
   eventId,
   body,
   signal,
+  idempotencyKey,
 }: {
   eventId: number;
   body: CreatePublicOrderRequest;
   signal?: AbortSignal;
+  idempotencyKey?: string;
 }): Promise<PublicOrderConfirmation> {
-  return postJson<PublicOrderConfirmation, CreatePublicOrderRequest>(
+  const key =
+    idempotencyKey?.trim() ||
+    crypto.randomUUID();
+
+  return postJson<
+    PublicOrderConfirmation,
+    CreatePublicOrderRequest
+  >(
     `${API_URL}/api/public/events/${eventId}/orders`,
     body,
     signal,
+    {
+      "Idempotency-Key": key,
+    },
   );
 }
 
@@ -178,12 +199,16 @@ export async function getPublicOrderConfirmation(
   signal?: AbortSignal,
 ): Promise<PublicOrderConfirmation> {
   const response = await fetch(
-    `${API_URL}/api/public/events/${eventId}/orders/${encodeURIComponent(orderReference)}`,
+    `${API_URL}/api/public/events/${eventId}/orders/${encodeURIComponent(
+      orderReference,
+    )}`,
     {
       method: "GET",
       credentials: "include",
       signal,
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+      },
     },
   );
 

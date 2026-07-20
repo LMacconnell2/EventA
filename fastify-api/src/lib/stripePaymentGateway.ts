@@ -4,6 +4,8 @@ import type Stripe from "stripe";
 
 import type {
   CreateGatewayPaymentInput,
+  CreateGatewayPaymentIntentInput,
+  CreateGatewayPaymentIntentResult,
   CreateGatewayPaymentResult,
   PaymentGateway,
   RefundGatewayPaymentInput,
@@ -24,99 +26,132 @@ export class StripePaymentGateway
     private readonly webhookSecret: string,
   ) {}
 
-  async createPayment(
-    input: CreateGatewayPaymentInput,
-  ): Promise<CreateGatewayPaymentResult> {
-    /*
-     * This assumes createPayment is currently intended
-     * to create or confirm a PaymentIntent.
-     *
-     * If your checkout flow uses Stripe Checkout Sessions,
-     * this interface will need another method such as
-     * createCheckoutSession().
-     */
-
-    const amountInCents = Math.round(
-      Number(input.amount) * 100,
+  async createPaymentIntent(
+    input: CreateGatewayPaymentIntentInput,
+  ): Promise<CreateGatewayPaymentIntentResult> {
+    const amountInCents = this.toMinorUnits(
+      input.amount,
+      "payment",
     );
-
-    if (
-      !Number.isSafeInteger(amountInCents) ||
-      amountInCents < 1
-    ) {
-      throw new CommerceError(
-        400,
-        "The payment amount is invalid.",
-        "INVALID_PAYMENT_AMOUNT",
-      );
-    }
 
     const paymentIntent =
       await this.stripe.paymentIntents.create(
         {
           amount: amountInCents,
           currency: input.currency.toLowerCase(),
-          receipt_email: input.customerEmail,
-          payment_method: input.paymentMethodId,
-          confirm: Boolean(input.paymentMethodId),
-          metadata: {
-            ...input.metadata,
-            orderId: String(input.orderId),
+          automatic_payment_methods: {
+            enabled: true,
           },
+          metadata: input.metadata,
         },
         {
           idempotencyKey: input.idempotencyKey,
         },
       );
 
+    if (!paymentIntent.client_secret) {
+      throw new CommerceError(
+        502,
+        "Stripe did not return a PaymentIntent client secret.",
+        "PAYMENT_CLIENT_SECRET_MISSING",
+      );
+    }
+
     return {
+      paymentIntentId: paymentIntent.id,
+      clientSecret: paymentIntent.client_secret,
       status: this.mapPaymentIntentStatus(
         paymentIntent.status,
       ),
-      providerTransactionId:
-        paymentIntent.latest_charge
-          ? typeof paymentIntent.latest_charge ===
-            "string"
-            ? paymentIntent.latest_charge
-            : paymentIntent.latest_charge.id
-          : null,
-      providerPaymentIntent: paymentIntent.id,
-      providerCustomerId:
-        typeof paymentIntent.customer === "string"
-          ? paymentIntent.customer
-          : paymentIntent.customer?.id ?? null,
-      paymentMethod:
-        typeof paymentIntent.payment_method === "string"
-          ? paymentIntent.payment_method
-          : paymentIntent.payment_method?.id ?? null,
-      receiptUrl: null,
-      failureReason:
-        paymentIntent.last_payment_error?.message ??
-        null,
-      metadata: {
-        clientSecret: paymentIntent.client_secret,
-        stripeStatus: paymentIntent.status,
-      },
     };
+  }
+
+  async createPayment(
+    input: CreateGatewayPaymentInput,
+  ): Promise<CreateGatewayPaymentResult> {
+    const amountInCents = this.toMinorUnits(
+      input.amount,
+      "payment",
+    );
+
+    let paymentIntent: Stripe.PaymentIntent;
+
+    if (input.paymentIntentId) {
+      paymentIntent =
+        await this.stripe.paymentIntents.retrieve(
+          input.paymentIntentId,
+          {
+            expand: ["latest_charge"],
+          },
+        );
+
+      if (paymentIntent.amount !== amountInCents) {
+        throw new CommerceError(
+          409,
+          "The Stripe PaymentIntent amount does not match the order total.",
+          "PAYMENT_AMOUNT_MISMATCH",
+        );
+      }
+
+      if (
+        paymentIntent.currency.toLowerCase() !==
+        input.currency.toLowerCase()
+      ) {
+        throw new CommerceError(
+          409,
+          "The Stripe PaymentIntent currency does not match the order currency.",
+          "PAYMENT_CURRENCY_MISMATCH",
+        );
+      }
+
+      paymentIntent =
+        await this.stripe.paymentIntents.update(
+          paymentIntent.id,
+          {
+            receipt_email: input.customerEmail,
+            metadata: {
+              ...paymentIntent.metadata,
+              ...input.metadata,
+              orderId: String(input.orderId),
+            },
+          },
+        );
+    } else {
+      paymentIntent =
+        await this.stripe.paymentIntents.create(
+          {
+            amount: amountInCents,
+            currency: input.currency.toLowerCase(),
+            receipt_email: input.customerEmail,
+            payment_method: input.paymentMethodId,
+            confirm: Boolean(input.paymentMethodId),
+            automatic_payment_methods:
+              input.paymentMethodId
+                ? undefined
+                : {
+                    enabled: true,
+                  },
+            metadata: {
+              ...input.metadata,
+              orderId: String(input.orderId),
+            },
+          },
+          {
+            idempotencyKey: input.idempotencyKey,
+          },
+        );
+    }
+
+    return this.toGatewayPaymentResult(paymentIntent);
   }
 
   async refundPayment(
     input: RefundGatewayPaymentInput,
   ): Promise<RefundGatewayPaymentResult> {
-    const amountInCents = Math.round(
-      Number(input.amount) * 100,
+    const amountInCents = this.toMinorUnits(
+      input.amount,
+      "refund",
     );
-
-    if (
-      !Number.isSafeInteger(amountInCents) ||
-      amountInCents < 1
-    ) {
-      throw new CommerceError(
-        400,
-        "The refund amount is invalid.",
-        "INVALID_REFUND_AMOUNT",
-      );
-    }
 
     if (
       !input.providerTransactionId &&
@@ -165,7 +200,8 @@ export class StripePaymentGateway
   async verifyWebhook(
     input: VerifyWebhookInput,
   ): Promise<VerifiedWebhookEvent> {
-    const header = input.headers["stripe-signature"];
+    const header =
+      input.headers["stripe-signature"];
 
     const signature = Array.isArray(header)
       ? header[0]
@@ -196,6 +232,70 @@ export class StripePaymentGateway
     }
 
     return this.mapWebhookEvent(event);
+  }
+
+  private toMinorUnits(
+    amount: string,
+    operation: "payment" | "refund",
+  ): number {
+    const amountInCents = Math.round(
+      Number(amount) * 100,
+    );
+
+    if (
+      !Number.isSafeInteger(amountInCents) ||
+      amountInCents < 1
+    ) {
+      throw new CommerceError(
+        400,
+        `The ${operation} amount is invalid.`,
+        operation === "payment"
+          ? "INVALID_PAYMENT_AMOUNT"
+          : "INVALID_REFUND_AMOUNT",
+      );
+    }
+
+    return amountInCents;
+  }
+
+  private toGatewayPaymentResult(
+    paymentIntent: Stripe.PaymentIntent,
+  ): CreateGatewayPaymentResult {
+    const latestCharge =
+      paymentIntent.latest_charge;
+
+    return {
+      status: this.mapPaymentIntentStatus(
+        paymentIntent.status,
+      ),
+      providerTransactionId: latestCharge
+        ? typeof latestCharge === "string"
+          ? latestCharge
+          : latestCharge.id
+        : null,
+      providerPaymentIntent: paymentIntent.id,
+      providerCustomerId:
+        typeof paymentIntent.customer === "string"
+          ? paymentIntent.customer
+          : paymentIntent.customer?.id ?? null,
+      paymentMethod:
+        typeof paymentIntent.payment_method ===
+        "string"
+          ? paymentIntent.payment_method
+          : paymentIntent.payment_method?.id ?? null,
+      receiptUrl:
+        latestCharge &&
+        typeof latestCharge !== "string"
+          ? latestCharge.receipt_url
+          : null,
+      failureReason:
+        paymentIntent.last_payment_error?.message ??
+        null,
+      metadata: {
+        clientSecret: paymentIntent.client_secret,
+        stripeStatus: paymentIntent.status,
+      },
+    };
   }
 
   private mapWebhookEvent(

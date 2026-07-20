@@ -87,6 +87,8 @@ export class PublicCheckoutService {
     }
 
     const client = await this.pool.connect();
+    let committed = false;
+    let checkoutToken: string | undefined;
 
     try {
       await client.query("BEGIN");
@@ -139,7 +141,7 @@ export class PublicCheckoutService {
         roundMoney(subtotal - discount + fees),
       );
 
-      const checkoutToken = generateOpaqueToken();
+      checkoutToken = generateOpaqueToken();
       const tokenHash = hashToken(checkoutToken);
       const expiresAt = new Date(
         Date.now() + 15 * 60 * 1000,
@@ -213,8 +215,9 @@ export class PublicCheckoutService {
       }
 
       await client.query("COMMIT");
+      committed = true;
 
-      return {
+      const response = {
         checkout_token: checkoutToken,
         event_id: eventId,
         currency: "USD",
@@ -231,8 +234,56 @@ export class PublicCheckoutService {
           : null,
         expires_at: expiresAt.toISOString(),
       };
+
+      if (total === 0) {
+        return response;
+      }
+
+      const gateway = this.gateways.get("stripe");
+
+      if (!gateway) {
+        throw new CommerceError(
+          422,
+          "Stripe is not configured.",
+          "PAYMENT_PROVIDER_NOT_CONFIGURED",
+        );
+      }
+
+      const paymentIntent =
+        await gateway.createPaymentIntent({
+          amount: response.total,
+          currency: response.currency,
+          idempotencyKey: `checkout:${tokenHash}`,
+          metadata: {
+            checkout_session_id: String(
+              session.rows[0].checkout_session_id,
+            ),
+            event_id: String(eventId),
+          },
+        });
+
+      return {
+        ...response,
+        payment: {
+          provider: gateway.providerName,
+          client_secret: paymentIntent.clientSecret,
+          payment_intent_id: paymentIntent.paymentIntentId,
+        },
+      };
     } catch (error) {
-      await client.query("ROLLBACK");
+      if (!committed) {
+        await client.query("ROLLBACK");
+      } else if (checkoutToken) {
+        try {
+          await this.releaseCheckout(
+            eventId,
+            checkoutToken,
+          );
+        } catch {
+          // Preserve the original checkout/payment error.
+        }
+      }
+
       throw error;
     } finally {
       client.release();

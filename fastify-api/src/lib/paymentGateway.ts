@@ -3,6 +3,19 @@ export type GatewayPaymentStatus =
   | "SUCCEEDED"
   | "FAILED";
 
+export type CreateGatewayPaymentIntentInput = {
+  amount: string;
+  currency: string;
+  idempotencyKey: string;
+  metadata: Record<string, string>;
+};
+
+export type CreateGatewayPaymentIntentResult = {
+  paymentIntentId: string;
+  clientSecret: string;
+  status: GatewayPaymentStatus;
+};
+
 export type CreateGatewayPaymentInput = {
   orderId: number;
   amount: string;
@@ -61,6 +74,10 @@ export type VerifiedWebhookEvent = {
 
 export interface PaymentGateway {
   readonly providerName: string;
+
+  createPaymentIntent(
+    input: CreateGatewayPaymentIntentInput,
+  ): Promise<CreateGatewayPaymentIntentResult>;
 
   createPayment(
     input: CreateGatewayPaymentInput,
