@@ -145,15 +145,28 @@ export type PublicCheckoutLineItem = {
   line_total: string;
 };
 
+export type PublicCheckoutPayment = {
+  provider: "stripe";
+  client_secret: string;
+  payment_intent_id: string;
+};
+
 export type PublicCheckoutQuote = {
   checkout_token: string;
   event_id: number;
   currency: "USD" | string;
   items: PublicCheckoutLineItem[];
   subtotal: string;
+  discount: string;
   fees: string;
   total: string;
+  promo_code: string | null;
   expires_at: string;
+
+  /**
+   * Omitted when the checkout total is zero and no payment is required.
+   */
+  payment?: PublicCheckoutPayment;
 };
 
 export type PublicCheckoutCustomer = {
@@ -166,14 +179,33 @@ export type PublicCheckoutCustomer = {
 
 export type CreatePublicOrderRequest = {
   checkout_token: string;
+
   customer: {
     first_name: string;
     last_name: string;
     email: string;
     phone: string | null;
   };
-  /** Token/PaymentMethod ID created by Stripe Elements or another provider. */
-  payment_method_id: string;
+
+  payment_provider: "stripe" | "paypal" | "square";
+
+  /**
+   * Used by paid Stripe orders.
+   * Omitted for free orders.
+   */
+  payment_intent_id?: string;
+
+  /**
+   * Supported by providers that create a payment method first.
+   */
+  payment_method_id?: string;
+
+  attendees?: {
+    ticket_id: number;
+    attendee_fname: string;
+    attendee_lname: string;
+    email: string;
+  }[];
 };
 
 export type PublicOrderConfirmation = {

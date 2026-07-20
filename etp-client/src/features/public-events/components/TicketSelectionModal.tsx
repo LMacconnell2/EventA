@@ -17,6 +17,13 @@ import {
   useState,
 } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  Elements,
+  PaymentElement,
+  useElements,
+  useStripe,
+} from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 
 import {
   createPublicEventCheckout,
@@ -36,27 +43,19 @@ import "./TicketSelectionModal.css";
 type CheckoutStep = 1 | 2 | 3 | 4;
 type TicketQuantities = Record<number, number>;
 
-type PaymentDetails = {
-  nameOnCard: string;
-  cardNumber: string;
-  expiry: string;
-  cvv: string;
-};
-
 type TicketSelectionModalProps = {
   open: boolean;
   eventId: number;
   eventTitle: string;
   onClose: () => void;
-  /**
-   * Replace this with Stripe Elements, Adyen, Braintree, etc. in production.
-   * It must return a provider-created payment method/token. Never send raw card
-   * numbers to your own API in production.
-   */
-  createPaymentMethod?: (
-    payment: PaymentDetails,
-  ) => Promise<string>;
 };
+
+const stripePublishableKey =
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+const stripePromise = stripePublishableKey
+  ? loadStripe(stripePublishableKey)
+  : null;
 
 const EMPTY_CUSTOMER: PublicCheckoutCustomer = {
   first_name: "",
@@ -64,13 +63,6 @@ const EMPTY_CUSTOMER: PublicCheckoutCustomer = {
   email: "",
   confirm_email: "",
   phone: "",
-};
-
-const EMPTY_PAYMENT: PaymentDetails = {
-  nameOnCard: "",
-  cardNumber: "",
-  expiry: "",
-  cvv: "",
 };
 
 function getErrorMessage(error: unknown): string {
@@ -82,6 +74,12 @@ function getErrorMessage(error: unknown): string {
 function parsePrice(value: string | number): number {
   const price = Number(value);
   return Number.isFinite(price) ? price : 0;
+}
+
+function checkoutRequiresPayment(
+  quote: PublicCheckoutQuote,
+): boolean {
+  return parsePrice(quote.total) > 0;
 }
 
 function formatCurrency(value: string | number): string {
@@ -118,16 +116,11 @@ function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
-function digitsOnly(value: string): string {
-  return value.replace(/\D/g, "");
-}
-
 export function TicketSelectionModal({
   open,
   eventId,
   eventTitle,
   onClose,
-  createPaymentMethod,
 }: TicketSelectionModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -135,8 +128,6 @@ export function TicketSelectionModal({
   const [quantities, setQuantities] = useState<TicketQuantities>({});
   const [customer, setCustomer] =
     useState<PublicCheckoutCustomer>(EMPTY_CUSTOMER);
-  const [payment, setPayment] =
-    useState<PaymentDetails>(EMPTY_PAYMENT);
   const [quote, setQuote] = useState<PublicCheckoutQuote | null>(null);
   const [confirmation, setConfirmation] =
     useState<PublicOrderConfirmation | null>(null);
@@ -153,6 +144,19 @@ export function TicketSelectionModal({
   const quoteMutation = useMutation({
     mutationFn: createPublicEventCheckout,
     onSuccess: (response) => {
+      const requiresPayment =
+        parsePrice(response.total) > 0;
+
+      if (
+        requiresPayment &&
+        !response.payment?.client_secret
+      ) {
+        setFormError(
+          "The API did not return Stripe payment information for this paid order.",
+        );
+        return;
+      }
+
       setQuote(response);
       setStep(2);
     },
@@ -171,7 +175,6 @@ export function TicketSelectionModal({
       setStep(1);
       setQuantities({});
       setCustomer(EMPTY_CUSTOMER);
-      setPayment(EMPTY_PAYMENT);
       setQuote(null);
       setConfirmation(null);
       setFormError(null);
@@ -218,8 +221,6 @@ export function TicketSelectionModal({
       sum + parsePrice(item.ticket.ticket_price) * item.quantity,
     0,
   );
-
-  const displayTotal = quote?.total ?? localTotal;
 
   function setTicketQuantity(
     ticket: PublicPurchasableTicket,
@@ -280,68 +281,70 @@ export function TicketSelectionModal({
     }
   }
 
-  function continueFromDetails() {
-    setFormError(null);
+  async function continueFromDetails() {
+  setFormError(null);
 
-    if (!customer.first_name.trim() || !customer.last_name.trim()) {
-      setFormError("Enter your first and last name.");
-      return;
-    }
-
-    if (!isValidEmail(customer.email)) {
-      setFormError("Enter a valid email address.");
-      return;
-    }
-
-    if (customer.email.trim() !== customer.confirm_email.trim()) {
-      setFormError("The email addresses do not match.");
-      return;
-    }
-
-    setStep(3);
+  if (
+    !customer.first_name.trim() ||
+    !customer.last_name.trim()
+  ) {
+    setFormError("Enter your first and last name.");
+    return;
   }
 
-  async function pay() {
-    setFormError(null);
+  if (!isValidEmail(customer.email)) {
+    setFormError("Enter a valid email address.");
+    return;
+  }
 
-    if (!quote) {
-      setFormError("Your checkout quote has expired. Please select tickets again.");
-      setStep(1);
-      return;
-    }
+  if (
+    customer.email.trim() !==
+    customer.confirm_email.trim()
+  ) {
+    setFormError("The email addresses do not match.");
+    return;
+  }
 
-    if (!payment.nameOnCard.trim()) {
-      setFormError("Enter the name on the card.");
-      return;
-    }
+  if (!quote) {
+    setFormError(
+      "Your checkout quote has expired. Please select tickets again.",
+    );
+    setStep(1);
+    return;
+  }
 
-    if (!createPaymentMethod) {
+  if (checkoutRequiresPayment(quote)) {
+    if (!quote.payment?.client_secret) {
       setFormError(
-        "No payment provider is connected. Pass createPaymentMethod to TicketSelectionModal.",
+        "The API did not return Stripe payment information for this paid order.",
       );
       return;
     }
 
-    try {
-      const paymentMethodId = await createPaymentMethod(payment);
-
-      await orderMutation.mutateAsync({
-        eventId,
-        body: {
-          checkout_token: quote.checkout_token,
-          customer: {
-            first_name: customer.first_name.trim(),
-            last_name: customer.last_name.trim(),
-            email: customer.email.trim(),
-            phone: customer.phone.trim() || null,
-          },
-          payment_method_id: paymentMethodId,
-        },
-      });
-    } catch (error) {
-      setFormError(getErrorMessage(error));
-    }
+    setStep(3);
+    return;
   }
+
+  try {
+    await orderMutation.mutateAsync({
+      eventId,
+      body: {
+        checkout_token: quote.checkout_token,
+
+        customer: {
+          first_name: customer.first_name.trim(),
+          last_name: customer.last_name.trim(),
+          email: customer.email.trim(),
+          phone: customer.phone.trim() || null,
+        },
+
+        payment_provider: "stripe",
+      },
+    });
+  } catch (error) {
+    setFormError(getErrorMessage(error));
+  }
+}
 
   function goBack() {
     setFormError(null);
@@ -575,80 +578,31 @@ export function TicketSelectionModal({
             </div>
           )}
 
-          {step === 3 && quote && (
-            <div className="ticket-checkout-form">
-              <div className="ticket-checkout-security">
-                <LockKeyhole size={18} />
-                Your payment info is encrypted and secure
-              </div>
-
-              <label>
-                Name on card *
-                <input
-                  placeholder="Jane Doe"
-                  value={payment.nameOnCard}
-                  onChange={(event) =>
-                    setPayment((current) => ({
-                      ...current,
-                      nameOnCard: event.target.value,
-                    }))
-                  }
+          {step === 3 &&
+            quote &&
+            checkoutRequiresPayment(quote) &&
+            quote.payment?.client_secret && (
+              <Elements
+                key={quote.payment.client_secret}
+                stripe={stripePromise}
+                options={{
+                  clientSecret: quote.payment.client_secret,
+                }}
+              >
+                <StripePaymentForm
+                  quote={quote}
+                  customer={customer}
+                  eventId={eventId}
+                  isPending={orderMutation.isPending}
+                  onBack={goBack}
+                  onError={setFormError}
+                  onConfirmed={(response) => {
+                    setConfirmation(response);
+                    setStep(4);
+                  }}
                 />
-              </label>
-
-              {/* These three inputs are wireframe placeholders. In production,
-                  replace them with your payment provider's hosted fields. */}
-              <label>
-                Card number *
-                <input
-                  inputMode="numeric"
-                  autoComplete="cc-number"
-                  placeholder="1234 5678 9012 3456"
-                  value={payment.cardNumber}
-                  onChange={(event) =>
-                    setPayment((current) => ({
-                      ...current,
-                      cardNumber: digitsOnly(event.target.value).slice(0, 19),
-                    }))
-                  }
-                />
-              </label>
-
-              <div className="ticket-checkout-form__row">
-                <label>
-                  Expiry *
-                  <input
-                    autoComplete="cc-exp"
-                    placeholder="MM/YY"
-                    value={payment.expiry}
-                    onChange={(event) =>
-                      setPayment((current) => ({
-                        ...current,
-                        expiry: event.target.value.slice(0, 5),
-                      }))
-                    }
-                  />
-                </label>
-                <label>
-                  CVV *
-                  <input
-                    inputMode="numeric"
-                    autoComplete="cc-csc"
-                    placeholder="123"
-                    value={payment.cvv}
-                    onChange={(event) =>
-                      setPayment((current) => ({
-                        ...current,
-                        cvv: digitsOnly(event.target.value).slice(0, 4),
-                      }))
-                    }
-                  />
-                </label>
-              </div>
-
-              <OrderSummary quote={quote} />
-            </div>
-          )}
+              </Elements>
+            )}
 
           {step === 4 && confirmation && (
             <div className="ticket-checkout-confirmation">
@@ -689,7 +643,8 @@ export function TicketSelectionModal({
           )}
         </div>
 
-        <footer className="ticket-checkout__footer">
+        {step !== 3 && (
+          <footer className="ticket-checkout__footer">
           {step === 1 && (
             <button
               type="button"
@@ -707,7 +662,7 @@ export function TicketSelectionModal({
             </button>
           )}
 
-          {(step === 2 || step === 3) && (
+          {step === 2 && (
             <>
               <button type="button" className="ticket-checkout__back" onClick={goBack}>
                 <ArrowLeft size={17} /> Back
@@ -716,18 +671,14 @@ export function TicketSelectionModal({
                 type="button"
                 className="ticket-checkout__primary"
                 disabled={orderMutation.isPending}
-                onClick={() => {
-                  if (step === 2) continueFromDetails();
-                  else void pay();
-                }}
+                onClick={continueFromDetails}
               >
-                {step === 2 ? (
-                  <>Continue to Payment <ArrowRight size={19} /></>
-                ) : orderMutation.isPending ? (
-                  <><LoaderCircle className="ticket-checkout__spinner" /> Processing payment</>
-                ) : (
-                  <>Pay {formatCurrency(displayTotal)} <ArrowRight size={19} /></>
-                )}
+                <>
+                  {quote && checkoutRequiresPayment(quote)
+                    ? "Continue to Payment"
+                    : "Complete Registration"}
+                  <ArrowRight size={19} />
+                </>
               </button>
             </>
           )}
@@ -737,9 +688,161 @@ export function TicketSelectionModal({
               Done
             </button>
           )}
-        </footer>
+          </footer>
+        )}
       </section>
     </div>
+  );
+}
+
+type StripePaymentFormProps = {
+  eventId: number;
+  quote: PublicCheckoutQuote;
+  customer: PublicCheckoutCustomer;
+  isPending: boolean;
+  onBack: () => void;
+  onError: (message: string | null) => void;
+  onConfirmed: (paymentIntentId: string) => Promise<void>;
+};
+
+function StripePaymentForm({
+  eventId,
+  quote,
+  customer,
+  isPending,
+  onBack,
+  onError,
+  onConfirmed,
+}: StripePaymentFormProps) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isConfirming, setIsConfirming] = useState(false);
+
+  const paymentIsPending = isPending || isConfirming;
+
+  async function confirmPayment() {
+    onError(null);
+
+    if (!stripe || !elements) {
+      onError("Stripe is still loading. Please try again.");
+      return;
+    }
+
+    setIsConfirming(true);
+
+    try {
+      const submitResult = await elements.submit();
+
+      if (submitResult.error) {
+        onError(
+          submitResult.error.message ??
+            "Check your payment information and try again.",
+        );
+        return;
+      }
+
+      const result = await stripe.confirmPayment({
+        elements,
+        clientSecret: quote.payment.client_secret,
+        confirmParams: {
+          return_url: `${window.location.origin}/events/${eventId}/payment-return`,
+          payment_method_data: {
+            billing_details: {
+              name: `${customer.first_name} ${customer.last_name}`.trim(),
+              email: customer.email.trim(),
+              phone: customer.phone.trim() || undefined,
+            },
+          },
+        },
+        redirect: "if_required",
+      });
+
+      if ("error" in result && result.error) {
+        onError(
+          result.error.message ??
+            "Stripe could not complete the payment.",
+        );
+        return;
+      }
+
+      if (!("paymentIntent" in result)) {
+        onError("Stripe did not return a PaymentIntent.");
+        return;
+      }
+
+      const paymentIntent = result.paymentIntent;
+
+      if (
+        paymentIntent.status !== "succeeded" &&
+        paymentIntent.status !== "processing"
+      ) {
+        onError(
+          `The payment has status "${paymentIntent.status}". Please try again.`,
+        );
+        return;
+      }
+
+      await onConfirmed(paymentIntent.id);
+    } catch (error) {
+      onError(getErrorMessage(error));
+    } finally {
+      setIsConfirming(false);
+    }
+  }
+
+  return (
+    <>
+      <div className="ticket-checkout-form">
+        <div className="ticket-checkout-security">
+          <LockKeyhole size={18} />
+          Payment information is securely handled by Stripe
+        </div>
+
+        <PaymentElement
+          options={{
+            defaultValues: {
+              billingDetails: {
+                name: `${customer.first_name} ${customer.last_name}`.trim(),
+                email: customer.email.trim(),
+                phone: customer.phone.trim() || undefined,
+              },
+            },
+          }}
+        />
+
+        <OrderSummary quote={quote} />
+      </div>
+
+      <div className="ticket-checkout__footer">
+        <button
+          type="button"
+          className="ticket-checkout__back"
+          disabled={paymentIsPending}
+          onClick={onBack}
+        >
+          <ArrowLeft size={17} /> Back
+        </button>
+
+        <button
+          type="button"
+          className="ticket-checkout__primary"
+          disabled={!stripe || !elements || paymentIsPending}
+          onClick={() => void confirmPayment()}
+        >
+          {paymentIsPending ? (
+            <>
+              <LoaderCircle className="ticket-checkout__spinner" />
+              Processing payment
+            </>
+          ) : (
+            <>
+              Pay {formatCurrency(quote.total)}
+              <ArrowRight size={19} />
+            </>
+          )}
+        </button>
+      </div>
+    </>
   );
 }
 

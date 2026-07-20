@@ -35,19 +35,20 @@ async function addDependencies() {
   await app.register(cors, {
     origin: "http://localhost:5173",
     credentials: true,
-    methods: [
-      "GET",
-      "POST",
-      "PUT",
-      "PATCH",
-      "DELETE",
-      "OPTIONS",
-    ],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-    ],
-  });
+      allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "Idempotency-Key",
+      ],
+      methods: [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "OPTIONS",
+      ],
+    });
 }
 
 app.get("/", async () => {
