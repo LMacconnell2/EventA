@@ -63,7 +63,20 @@ ENV PORT=3000
 
 WORKDIR /app
 
+# Production package files and dependencies.
 COPY --from=deploy --chown=node:node /prod/api ./
+
+# Compiled API output.
+COPY --from=build --chown=node:node \
+    /app/apps/api/dist \
+    ./dist
+
+# Database initialization script.
+COPY --chown=node:node \
+    apps/api/docker/startup.sh \
+    /app/docker/startup.sh
+
+RUN chmod +x /app/docker/startup.sh
 
 USER node
 
